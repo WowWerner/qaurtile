@@ -121,8 +121,6 @@ export function TeamsTab() {
         return '📋';
       case 'general':
         return '🎯';
-      case 'initial_contact':
-        return '📋';
       default:
         return '🎯';
     }
@@ -227,87 +225,6 @@ export function TeamsTab() {
             </h3>
             <p className="text-sm text-gray-500">
               Team data will appear here when teams are configured
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-                  <span className="text-lg">
-                    {getSpecializationIcon(team.specialization)}
-                  </span>
-                  <span className="font-medium text-gray-900">
-                    {team.team_name}
-                  </span>
-                </div>
-                <Badge className={getTeamPerformanceColor(team.avg_team_settlement_rate || 0)}>
-                  {((team.avg_team_settlement_rate || 0) * 100).toFixed(1)}%
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Team Size:</span>
-                  <div className="font-medium text-gray-900">
-                    {team.team_size || 0} agents
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Daily Capacity:</span>
-                  <div className="font-medium text-gray-900">
-                    {team.total_team_capacity || 0}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Completions:</span>
-                  <div className="font-medium text-gray-900">
-                    {(team.avg_team_completions || 0).toFixed(1)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Collections:</span>
-                  <div className="font-medium text-gray-900">
-                    N${(team.avg_team_collections || 0).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Specialization:</span>
-                  <span className="font-medium text-gray-900">
-                    {team.specialization?.replace('_', '/')}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-gray-600">Target Capacity:</span>
-                  <span className="font-medium text-gray-900">
-                    {team.target_capacity || 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-gray-600">Satisfaction:</span>
-                  <span className="font-medium text-gray-900">
-                    {(team.avg_team_satisfaction || 0).toFixed(1)}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {teamsData.length === 0 && (
-        <Card className="border-gray-200">
-          <CardContent className="text-center py-12">
-            <Users size={48} className="text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">
-              No Teams Data Available
-            </h3>
-            <p className="text-sm text-gray-500">
-              Team performance data will appear here when available
             </p>
           </CardContent>
         </Card>
