@@ -3,7 +3,6 @@ import { Target, Award, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface SkillMatrixAgent {
   agent_id: number;
@@ -69,123 +68,8 @@ export function SkillMatrixTab() {
     );
   }
 
-
-  // Capacity analysis data
-  const capacityData = [
-    {
-      team: 'Legal Team',
-      capacity: 67,
-      needed: 1163,
-      backlog: 17,
-      efficiency: (67 / 1163) * 100
-    },
-    {
-      team: 'Negotiation Team', 
-      capacity: 120,
-      needed: 2139,
-      backlog: 18,
-      efficiency: (120 / 2139) * 100
-    },
-    {
-      team: 'Initial Contact Team',
-      capacity: 105,
-      needed: 11034,
-      backlog: 105,
-      efficiency: (105 / 11034) * 100
-    }
-  ];
-
-  const getBacklogColor = (days: number) => {
-    if (days <= 20) return 'text-green-600 bg-green-100';
-    if (days <= 50) return 'text-orange-600 bg-orange-100';
-    return 'text-red-600 bg-red-100';
-  };
   return (
     <div className="space-y-6">
-      {/* Current Capacity Analysis */}
-      <Card className="border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-lg font-light text-gray-800">
-            Current Capacity Analysis
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Capacity vs Demand Chart */}
-          <div className="mb-8">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={capacityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="team" 
-                  fontSize={11}
-                  stroke="#666"
-                />
-                <YAxis fontSize={11} stroke="#666" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#fff', 
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value: any, name: string) => [
-                    name === 'capacity' ? `${value} accounts/day` : `${value} accounts`,
-                    name === 'capacity' ? 'Daily Capacity' : 'Accounts Needed'
-                  ]}
-                />
-                <Bar dataKey="capacity" fill="#00abae" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="needed" fill="#ef4444" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Detailed Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {capacityData.map((team, index) => (
-              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-3">{team.team}</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Daily Capacity:</span>
-                    <span className="font-medium text-green-600">{team.capacity} accounts</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Accounts Needed:</span>
-                    <span className="font-medium text-red-600">{team.needed.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Backlog:</span>
-                    <Badge className={getBacklogColor(team.backlog)}>
-                      {team.backlog} days
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Efficiency:</span>
-                    <span className="font-medium text-gray-800">{team.efficiency.toFixed(1)}%</span>
-                  </div>
-                </div>
-                
-                {/* Progress bar showing capacity utilization */}
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="text-xs text-gray-600 mb-1">Capacity Utilization</div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-1000 ease-out ${
-                        team.efficiency > 10 ? 'bg-green-500' :
-                        team.efficiency > 5 ? 'bg-orange-500' : 'bg-red-500'
-                      }`}
-                      style={{ 
-                        width: `${Math.min(team.efficiency * 2, 100)}%`,
-                        animationDelay: `${index * 300}ms`
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-gray-200">
