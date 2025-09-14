@@ -1,64 +1,64 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, Target, Award, Activity, Calendar } from 'lucide-react';
+import { Target, Award, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-interface AgentPerformance {
-  id: number;
-  full_name: string;
-  employee_id: string;
-  role: string;
-  specialization: string;
-  status: string;
-  experience_level: string;
-  avg_daily_completions: number;
-  avg_successful_contacts: number;
-  avg_payments_secured: number;
-  avg_daily_collections: number;
-  avg_settlement_rate: number;
-  avg_satisfaction: number;
-  avg_compliance: number;
-  days_tracked: number;
-  last_performance_date: string;
+interface SkillMatrixAgent {
+  agent_id: number;
+  agent_name: string;
+  primary_specialization: string;
+  skills_summary: string;
+  avg_skill_level: number;
+  total_skills: number;
 }
 
-export function PerformanceTab() {
-  const [performanceData, setPerformanceData] = useState<AgentPerformance[]>([]);
+export function SkillMatrixTab() {
+  const [skillsData, setSkillsData] = useState<SkillMatrixAgent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadPerformanceData();
+    loadSkillsMatrix();
   }, []);
 
-  const loadPerformanceData = async () => {
+  const loadSkillsMatrix = async () => {
     try {
       const { data, error } = await supabase
-        .from('agent_performance_summary')
+        .from('skills_matrix')
         .select('*')
-        .order('avg_settlement_rate', { ascending: false });
+        .order('avg_skill_level', { ascending: false });
 
       if (error) throw error;
-      setPerformanceData(data || []);
+      setSkillsData(data || []);
     } catch (error) {
-      console.error('Error loading performance data:', error);
+      console.error('Error loading skills matrix:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getPerformanceColor = (rate: number) => {
-    if (rate >= 0.15) return 'bg-green-100 text-green-700';
-    if (rate >= 0.08) return 'bg-orange-100 text-orange-700';
+  const getSkillLevelColor = (level: number) => {
+    if (level >= 4.5) return 'bg-green-100 text-green-700';
+    if (level >= 3.5) return 'bg-blue-100 text-blue-700';
+    if (level >= 2.5) return 'bg-orange-100 text-orange-700';
     return 'bg-red-100 text-red-700';
   };
 
-  const chartData = performanceData.slice(0, 10).map(agent => ({
-    name: agent.full_name?.split(' ')[0] || 'Unknown',
-    settlementRate: (agent.avg_settlement_rate || 0) * 100,
-    completions: agent.avg_daily_completions || 0
-  }));
+  const getSpecializationIcon = (specialization: string) => {
+    switch (specialization?.toLowerCase()) {
+      case 'legal_government':
+      case 'legal':
+        return '⚖️';
+      case 'negotiation':
+        return '🤝';
+      case 'commercial':
+        return '🏢';
+      case 'telecommunications':
+        return '📞';
+      default:
+        return '🎯';
+    }
+  };
 
   if (loading) {
     return (
@@ -70,112 +70,168 @@ export function PerformanceTab() {
 
   return (
     <div className="space-y-6">
-      {/* Performance Chart */}
-      <Card className="border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-lg font-light text-gray-800">
-            Top 10 Agent Performance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis 
-                dataKey="name" 
-                fontSize={11}
-                stroke="#666"
-                angle={-45}
-                textAnchor="end"
-              />
-              <YAxis fontSize={11} stroke="#666" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#fff', 
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px'
-                }}
-                formatter={(value: any, name: string) => [
-                  name === 'settlementRate' ? `${value}%` : value,
-                  name === 'settlementRate' ? 'Settlement Rate' : 'Daily Completions'
-                ]}
-              />
-              <Bar dataKey="settlementRate" fill="#00abae" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-gray-200">
+          <CardContent className="p-6 text-center">
+            <Target size={24} strokeWidth={1} className="text-gray-400 mx-auto mb-2" />
+            <div className="text-2xl font-light text-gray-800">
+              {skillsData.length}
+            </div>
+            <div className="text-sm text-gray-500 font-light">Skilled Agents</div>
+          </CardContent>
+        </Card>
 
-      {/* Performance Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {performanceData.map((agent) => (
-          <Card key={agent.id} className="border-gray-200">
+        <Card className="border-gray-200">
+          <CardContent className="p-6 text-center">
+            <Award size={24} strokeWidth={1} className="text-gray-400 mx-auto mb-2" />
+            <div className="text-2xl font-light text-[rgb(0,171,174)]">
+              {skillsData.length > 0 ? 
+                (skillsData.reduce((sum, agent) => sum + (agent.avg_skill_level || 0), 0) / skillsData.length).toFixed(1) : 
+                '0.0'
+              }
+            </div>
+            <div className="text-sm text-gray-500 font-light">Avg Skill Level</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-200">
+          <CardContent className="p-6 text-center">
+            <TrendingUp size={24} strokeWidth={1} className="text-gray-400 mx-auto mb-2" />
+            <div className="text-2xl font-light text-gray-800">
+              {skillsData.reduce((sum, agent) => sum + (agent.total_skills || 0), 0)}
+            </div>
+            <div className="text-sm text-gray-500 font-light">Total Skills</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Skills Matrix Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {skillsData.map((agent) => (
+          <Card key={agent.agent_id} className="border-gray-200">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between">
-                <span className="font-medium text-gray-900">
-                  {agent.full_name}
+                <span className="font-medium text-gray-900 text-sm">
+                  {agent.agent_name}
                 </span>
-                <Badge className={getPerformanceColor(agent.avg_settlement_rate || 0)}>
-                  {((agent.avg_settlement_rate || 0) * 100).toFixed(1)}%
-                </Badge>
+                <span className="text-lg">
+                  {getSpecializationIcon(agent.primary_specialization)}
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Daily Completions:</span>
-                  <div className="font-medium text-gray-900">
-                    {(agent.avg_daily_completions || 0).toFixed(1)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Contacts:</span>
-                  <div className="font-medium text-gray-900">
-                    {(agent.avg_successful_contacts || 0).toFixed(1)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Collections:</span>
-                  <div className="font-medium text-gray-900">
-                    N${(agent.avg_daily_collections || 0).toLocaleString()}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Satisfaction:</span>
-                  <div className="font-medium text-gray-900">
-                    {(agent.avg_satisfaction || 0).toFixed(1)}
-                  </div>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Specialization:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {agent.primary_specialization?.replace('_', '/')}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Avg Level:</span>
+                <Badge className={getSkillLevelColor(agent.avg_skill_level || 0)}>
+                  {(agent.avg_skill_level || 0).toFixed(1)}/5.0
+                </Badge>
               </div>
 
-              <div className="pt-3 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Experience:</span>
-                  <span className="font-medium text-gray-900">
-                    {agent.experience_level}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-gray-600">Specialization:</span>
-                  <span className="font-medium text-gray-900">
-                    {agent.specialization}
-                  </span>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Total Skills:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {agent.total_skills || 0}
+                </span>
               </div>
+
+              {agent.skills_summary && (
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="text-xs text-gray-600 mb-2">Skills Breakdown:</div>
+                  <div className="space-y-2">
+                    {agent.skills_summary.split(', ').map((skill, idx) => {
+                      // Parse skill and level from format "skill_name (Level X)"
+                      const match = skill.match(/(.+)\s*\(Level\s*(\d+)\)/);
+                      if (!match) return null;
+                      
+                      const [, skillName, levelStr] = match;
+                      const level = parseInt(levelStr);
+                      const percentage = (level / 5) * 100;
+                      
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-700 capitalize">
+                              {skillName.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-xs font-medium text-gray-600">
+                              {level}/5
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className={`h-1.5 rounded-full transition-all duration-1000 ease-out ${
+                                level >= 4 ? 'bg-green-500' :
+                                level >= 3 ? 'bg-blue-500' :
+                                level >= 2 ? 'bg-orange-500' : 'bg-red-500'
+                              }`}
+                              style={{ 
+                                width: `${percentage}%`,
+                                animationDelay: `${idx * 200}ms`
+                              }}
+              {agent.skills_summary && (
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="text-xs text-gray-600 mb-2">Skills Breakdown:</div>
+                  <div className="space-y-2">
+                    {agent.skills_summary.split(', ').map((skill, idx) => {
+                      // Parse skill and level from format "skill_name (Level X)"
+                      const match = skill.match(/(.+)\s*\(Level\s*(\d+)\)/);
+                      if (!match) return null;
+                      
+                      const [, skillName, levelStr] = match;
+                      const level = parseInt(levelStr);
+                      const percentage = (level / 5) * 100;
+                      
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-700 capitalize">
+                              {skillName.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-xs font-medium text-gray-600">
+                              {level}/5
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className={`h-1.5 rounded-full transition-all duration-1000 ease-out ${
+                                level >= 4 ? 'bg-green-500' :
+                                level >= 3 ? 'bg-blue-500' :
+                                level >= 2 ? 'bg-orange-500' : 'bg-red-500'
+                              }`}
+                              style={{ 
+                                width: `${percentage}%`,
+                                animationDelay: `${idx * 200}ms`
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {performanceData.length === 0 && (
+      {skillsData.length === 0 && (
         <Card className="border-gray-200">
           <CardContent className="text-center py-12">
-            <Activity size={48} className="text-gray-300 mx-auto mb-4" />
+            <Target size={48} className="text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-600 mb-2">
-              No Performance Data Available
+              No Skills Data Available
             </h3>
             <p className="text-sm text-gray-500">
-              Performance metrics will appear here when available
+              Skills matrix data will appear here when available
             </p>
           </CardContent>
         </Card>
