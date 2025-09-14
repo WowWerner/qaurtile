@@ -2,6 +2,7 @@ import { Clock, AlertTriangle, CheckCircle, TrendingDown, Users, Target } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function WorkloadTab() {
   // Current capacity analysis data
@@ -105,7 +106,7 @@ export function WorkloadTab() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
+            <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 
                 dataKey="name" 
@@ -125,9 +126,23 @@ export function WorkloadTab() {
                   name === 'needed' ? 'Accounts Needed' : 'Capacity Gap'
                 ]}
               />
-              <Bar dataKey="capacity" fill="#00abae" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="needed" fill="#ef4444" radius={[2, 2, 0, 0]} />
-            </BarChart>
+              <Area 
+                type="monotone" 
+                dataKey="capacity" 
+                stackId="1"
+                stroke="#00abae" 
+                fill="#00abae" 
+                fillOpacity={0.6}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="needed" 
+                stackId="2"
+                stroke="#ef4444" 
+                fill="#ef4444" 
+                fillOpacity={0.4}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
