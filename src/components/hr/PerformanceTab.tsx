@@ -56,7 +56,7 @@ export function PerformanceTab() {
 
   const chartData = performanceData.slice(0, 10).map(agent => ({
     name: agent.full_name?.split(' ')[0] || 'Unknown',
-    settlementRate: (agent.avg_settlement_rate || 0) * 100,
+    settlementRate: (agent.avg_settlement_rate || 0),
     completions: agent.avg_daily_completions || 0
   }));
 
@@ -116,7 +116,7 @@ export function PerformanceTab() {
                   {agent.full_name}
                 </span>
                 <Badge className={getPerformanceColor(agent.avg_settlement_rate || 0)}>
-                  {((agent.avg_settlement_rate || 0) * 100).toFixed(1)}%
+                  {(agent.avg_settlement_rate || 0).toFixed(1)}%
                 </Badge>
               </CardTitle>
             </CardHeader>
