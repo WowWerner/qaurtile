@@ -17,7 +17,7 @@ import { OverviewDashboardPage } from './pages/OverviewDashboardPage';
 import { CampaignsDashboardPage } from './pages/CampaignsDashboardPage';
 import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
 import { ClientsDashboardPage } from './pages/ClientsDashboardPage';
-import { HRDashboardPage } from './pages/HRDashboardPage';
+import HRDashboardPage from './pages/HRDashboardPage';
 import { ProductivityDashboardPage } from './pages/ProductivityDashboardPage';
 import { ContactAnalysisPage } from './pages/ContactAnalysisPage';
 import { AddressAnalysisPage } from './pages/AddressAnalysisPage';
