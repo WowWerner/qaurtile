@@ -136,6 +136,111 @@ export function TeamsTab() {
 
   return (
     <div className="space-y-6">
+      {/* Team Restructuring Based on Data */}
+      <Card className="border-gray-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+        <CardHeader>
+          <CardTitle className="text-lg font-light text-gray-800">
+            Team Restructuring Based on Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Master Negotiation Team */}
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-4">Master Negotiation Team (Highest ROI)</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Leader:</span>
+                  <span className="font-medium">Mo-nique Thobias</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Success Rate:</span>
+                  <span className="font-medium text-blue-600">10.91%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Members:</span>
+                  <span className="font-medium">Paulina (10.80%), Leena (9.81%)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Daily Capacity:</span>
+                  <span className="font-medium">120 accounts</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <div className="text-xs text-blue-700 font-medium mb-1">Focus Areas:</div>
+                  <ul className="text-xs text-blue-600 space-y-1">
+                    <li>• High-value accounts</li>
+                    <li>• Payment arrangements</li>
+                    <li>• Settlements</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Elite Legal Team */}
+            <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-xl border border-red-200">
+              <h4 className="font-semibold text-red-800 mb-4">Elite Legal Team (Highest Settlement Rate)</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Leader:</span>
+                  <span className="font-medium">Keanan Namuyamba</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Success Rate:</span>
+                  <span className="font-medium text-red-600">17.46%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Members:</span>
+                  <span className="font-medium">Roselene Benjamin (15.50%)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Daily Capacity:</span>
+                  <span className="font-medium">67 accounts</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-red-200">
+                  <div className="text-xs text-red-700 font-medium mb-1">Focus Areas:</div>
+                  <ul className="text-xs text-red-600 space-y-1">
+                    <li>• Government debt</li>
+                    <li>• Legal collections</li>
+                    <li>• Complex cases</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Volume Processing Team */}
+            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-4">Volume Processing Team (Highest Throughput)</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Leader:</span>
+                  <span className="font-medium">Michael Jantjies</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Actions:</span>
+                  <span className="font-medium text-green-600">111K actions</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Members:</span>
+                  <span className="font-medium">Tommy Shipanga (52K actions)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Daily Capacity:</span>
+                  <span className="font-medium">105 accounts</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-green-200">
+                  <div className="text-xs text-green-700 font-medium mb-1">Focus Areas:</div>
+                  <ul className="text-xs text-green-600 space-y-1">
+                    <li>• Initial contact</li>
+                    <li>• Data management</li>
+                    <li>• Account setup</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Teams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {teams.map((team) => (
