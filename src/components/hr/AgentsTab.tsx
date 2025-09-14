@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Phone, Calendar, Badge as BadgeIcon, Award } from 'lucide-react';
+import { User, Badge as BadgeIcon, Award, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/lib/supabase';
 
 interface Agent {
@@ -9,14 +10,12 @@ interface Agent {
   employee_id: string;
   first_name: string;
   last_name: string;
-  email: string;
-  phone: string;
   role: string;
   specialization: string;
-  hire_date: string;
   status: string;
   experience_level: string;
   max_daily_capacity: number;
+  settlement_rate?: number;
 }
 
 export function AgentsTab() {
@@ -29,13 +28,31 @@ export function AgentsTab() {
 
   const loadAgents = async () => {
     try {
-      const { data, error } = await supabase
+      // Get agents with their performance data
+      const { data: agentsData, error: agentsError } = await supabase
         .from('agents')
         .select('*')
         .order('first_name', { ascending: true });
 
-      if (error) throw error;
-      setAgents(data || []);
+      if (agentsError) throw agentsError;
+
+      // Get performance data for settlement rates
+      const { data: performanceData, error: performanceError } = await supabase
+        .from('agent_performance_summary')
+        .select('id, avg_settlement_rate');
+
+      if (performanceError) throw performanceError;
+
+      // Merge agents with performance data
+      const agentsWithPerformance = (agentsData || []).map(agent => {
+        const performance = performanceData?.find(p => p.id === agent.id);
+        return {
+          ...agent,
+          settlement_rate: performance?.avg_settlement_rate || 0
+        };
+      });
+
+      setAgents(agentsWithPerformance);
     } catch (error) {
       console.error('Error loading agents:', error);
     } finally {
@@ -61,6 +78,12 @@ export function AgentsTab() {
       case 'junior': return 'bg-orange-100 text-orange-700';
       default: return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  const getSettlementColor = (rate: number) => {
+    if (rate >= 0.15) return 'bg-green-500';
+    if (rate >= 0.08) return 'bg-orange-500';
+    return 'bg-red-500';
   };
 
   if (loading) {
@@ -104,24 +127,24 @@ export function AgentsTab() {
                   <BadgeIcon size={14} className="text-gray-400" />
                   <span className="text-gray-600">ID: {agent.employee_id}</span>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Mail size={14} className="text-gray-400" />
-                  <span className="text-gray-600">{agent.email}</span>
-                </div>
-                
-                {agent.phone && (
-                  <div className="flex items-center space-x-2">
-                    <Phone size={14} className="text-gray-400" />
-                    <span className="text-gray-600">{agent.phone}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center space-x-2">
-                  <Calendar size={14} className="text-gray-400" />
-                  <span className="text-gray-600">
-                    Hired: {new Date(agent.hire_date).toLocaleDateString()}
+              </div>
+
+              {/* Settlement Rate Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 flex items-center space-x-1">
+                    <TrendingUp size={14} className="text-gray-400" />
+                    <span>Settlement Rate:</span>
                   </span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {((agent.settlement_rate || 0) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${getSettlementColor(agent.settlement_rate || 0)}`}
+                    style={{ width: `${Math.min(((agent.settlement_rate || 0) * 100), 100)}%` }}
+                  />
                 </div>
               </div>
 
