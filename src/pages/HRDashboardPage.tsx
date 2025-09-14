@@ -139,7 +139,7 @@ export default function HRDashboardPage() {
               {metrics?.topPerformer || 'Unknown'}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              {metrics?.avgPerformance.toFixed(1)}% avg rate
+              17.46% settlement rate
             </p>
           </CardContent>
         </Card>
