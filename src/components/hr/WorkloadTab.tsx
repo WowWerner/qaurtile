@@ -197,42 +197,6 @@ export function WorkloadTab() {
           </Card>
         ))}
       </div>
-
-      {/* Critical Insights */}
-      <Card className="border-gray-200 bg-gradient-to-r from-red-50 to-orange-50">
-        <CardHeader>
-          <CardTitle className="text-lg font-light text-gray-800 flex items-center space-x-2">
-            <AlertTriangle size={20} strokeWidth={1.5} />
-            <span>Critical Capacity Insights</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-white rounded-lg border border-red-200">
-              <h4 className="font-medium text-red-800 mb-2">🚨 Critical Shortage</h4>
-              <p className="text-sm text-red-700">
-                Initial Contact Team has 105-day backlog - immediate hiring needed to prevent bottleneck
-              </p>
-            </div>
-            
-            <div className="p-4 bg-white rounded-lg border border-orange-200">
-              <h4 className="font-medium text-orange-800 mb-2">⚡ Moderate Pressure</h4>
-              <p className="text-sm text-orange-700">
-                Legal and Negotiation teams at 17-18 day backlogs - monitor closely and consider cross-training
-              </p>
-            </div>
-            
-            <div className="p-4 bg-white rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-800 mb-2">📈 Recommended Actions</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Hire 8-10 initial contact agents</li>
-                <li>• Cross-train existing staff</li>
-                <li>• Implement overtime rotations</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
