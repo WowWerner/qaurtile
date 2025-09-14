@@ -137,13 +137,13 @@ export function AgentsTab() {
                     <span>Settlement Rate:</span>
                   </span>
                   <span className="text-sm font-medium text-gray-900">
-                    {((agent.settlement_rate || 0) * 100).toFixed(1)}%
+                    {(agent.settlement_rate || 0).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all duration-300 ${getSettlementColor(agent.settlement_rate || 0)}`}
-                    style={{ width: `${Math.min(((agent.settlement_rate || 0) * 100), 100)}%` }}
+                    style={{ width: `${Math.min((agent.settlement_rate || 0), 100)}%` }}
                   />
                 </div>
               </div>
