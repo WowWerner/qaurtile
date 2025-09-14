@@ -144,9 +144,43 @@ export function SkillMatrixTab() {
 
               {agent.skills_summary && (
                 <div className="pt-2 border-t border-gray-200">
-                  <div className="text-xs text-gray-600 mb-1">Skills:</div>
-                  <div className="text-xs text-gray-800 bg-gray-50 p-2 rounded">
-                    {agent.skills_summary}
+                  <div className="text-xs text-gray-600 mb-2">Skills Breakdown:</div>
+                  <div className="space-y-2">
+                    {agent.skills_summary.split(', ').map((skill, idx) => {
+                      // Parse skill and level from format "skill_name (Level X)"
+                      const match = skill.match(/(.+)\s*\(Level\s*(\d+)\)/);
+                      if (!match) return null;
+                      
+                      const [, skillName, levelStr] = match;
+                      const level = parseInt(levelStr);
+                      const percentage = (level / 5) * 100;
+                      
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-700 capitalize">
+                              {skillName.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-xs font-medium text-gray-600">
+                              {level}/5
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className={`h-1.5 rounded-full transition-all duration-1000 ease-out ${
+                                level >= 4 ? 'bg-green-500' :
+                                level >= 3 ? 'bg-blue-500' :
+                                level >= 2 ? 'bg-orange-500' : 'bg-red-500'
+                              }`}
+                              style={{ 
+                                width: `${percentage}%`,
+                                animationDelay: `${idx * 200}ms`
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
