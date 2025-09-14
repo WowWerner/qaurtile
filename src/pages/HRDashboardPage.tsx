@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Target, TrendingUp, Clock, Award, AlertCircle, Download } from 'lucide-react';
+import { ArrowLeft, Users, Target, TrendingUp, Clock, Award, AlertCircle, Download, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
