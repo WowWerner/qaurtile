@@ -200,9 +200,10 @@ export function HomePage() {
                   name === 'totalDebtValue' ? `N$${value}M` :
                   `${value} accounts`,
                   name === 'highPriority' ? 'High Priority' : 
-                  name === 'mediumPriority' ? 'Medium Priority' : 'Portfolio Value'
+                  name === 'mediumPriority' ? 'Medium Priority' : 
                   name === 'totalDebtValue' ? 'Portfolio Value' :
                   'Total Accounts'
+                ]}
                 labelFormatter={(label) => {
                   const client = companyTrendData.find(c => c.client === label);
                   return `${client?.fullName || label}`;
