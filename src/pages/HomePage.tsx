@@ -162,8 +162,8 @@ export function HomePage() {
                   <stop offset="95%" stopColor="rgb(0,171,174)" stopOpacity={0.02}/>
                 </linearGradient>
                 <linearGradient id="mediumPriorityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="rgb(251,146,60)" stopOpacity={0.08}/>
-                  <stop offset="95%" stopColor="rgb(251,146,60)" stopOpacity={0.01}/>
+                  <stop offset="5%" stopColor="rgb(0,171,174)" stopOpacity={0.06}/>
+                  <stop offset="95%" stopColor="rgb(0,171,174)" stopOpacity={0.008}/>
                 </linearGradient>
                 <linearGradient id="debtValueGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="rgb(139,92,246)" stopOpacity={0.06}/>
@@ -183,10 +183,15 @@ export function HomePage() {
               />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                  border: '1px solid rgba(0,171,174,0.3)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08)',
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  fontSize: '11px',
+                  padding: '10px 14px',
+                  color: '#1f2937',
+                  fontWeight: '500'
                 }}
                 formatter={(value: any, name: string) => [
                   name === 'highPriority' ? `${value} accounts` :
@@ -199,6 +204,17 @@ export function HomePage() {
                   const client = companyTrendData.find(c => c.client === label);
                   return `${client?.fullName || label}`;
                 }}
+                labelStyle={{ 
+                  fontSize: '12px', 
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '4px'
+                }}
+                itemStyle={{ 
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}
               />
               <Area
                 type="monotone"
@@ -207,25 +223,33 @@ export function HomePage() {
                 strokeWidth={2}
                 fill="url(#highPriorityGradient)"
                 dot={false}
+                animationBegin={300}
+                animationDuration={2000}
+                animationEasing="ease-out"
                 activeDot={{ 
                   r: 4, 
                   fill: 'rgb(0,171,174)', 
                   stroke: 'white', 
-                  strokeWidth: 2 
+                  strokeWidth: 2,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,171,174,0.3))'
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="mediumPriority"
-                stroke="rgba(251,146,60,0.4)"
+                stroke="rgba(0,171,174,0.25)"
                 strokeWidth={1.5}
                 fill="url(#mediumPriorityGradient)"
                 dot={false}
+                animationBegin={800}
+                animationDuration={2200}
+                animationEasing="ease-out"
                 activeDot={{ 
                   r: 3, 
-                  fill: 'rgb(251,146,60)', 
+                  fill: 'rgb(0,171,174)', 
                   stroke: 'white', 
-                  strokeWidth: 2 
+                  strokeWidth: 2,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,171,174,0.2))'
                 }}
               />
               <Area
@@ -235,11 +259,15 @@ export function HomePage() {
                 strokeWidth={1}
                 fill="url(#debtValueGradient)"
                 dot={false}
+                animationBegin={1300}
+                animationDuration={2400}
+                animationEasing="ease-out"
                 activeDot={{ 
                   r: 2, 
                   fill: 'rgb(139,92,246)', 
                   stroke: 'white', 
-                  strokeWidth: 2 
+                  strokeWidth: 2,
+                  filter: 'drop-shadow(0 2px 4px rgba(139,92,246,0.3))'
                 }}
               />
             </AreaChart>
