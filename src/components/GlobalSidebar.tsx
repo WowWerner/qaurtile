@@ -52,12 +52,6 @@ export function GlobalSidebar() {
       iconName: 'DollarSign'
     },
     {
-      name: 'Clients',
-      icon: Building,
-      path: '/dashboard/clients',
-      iconName: 'Building'
-    },
-    {
       name: 'HR',
       icon: UserCheck,
       path: '/dashboard/hr',
