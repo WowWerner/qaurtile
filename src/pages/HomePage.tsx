@@ -43,19 +43,46 @@ export function HomePage() {
           fullName: client.client_name
         }));
         
-        setCompanyTrendData(formattedData);
+        // Normalize data to prevent flat lines from outliers (like NIDA)
+        const maxHighPriority = Math.max(...formattedData.map(d => d.highPriority));
+        const maxMediumPriority = Math.max(...formattedData.map(d => d.mediumPriority));
+        const maxDebtValue = Math.max(...formattedData.map(d => d.totalDebtValue));
+        const maxAccounts = Math.max(...formattedData.map(d => d.totalAccounts));
+        
+        const normalizedData = formattedData.map(client => ({
+          ...client,
+          // Normalize to 0-100 scale for better visualization
+          highPriorityNormalized: maxHighPriority > 0 ? (client.highPriority / maxHighPriority) * 100 : 0,
+          mediumPriorityNormalized: maxMediumPriority > 0 ? (client.mediumPriority / maxMediumPriority) * 100 : 0,
+          totalDebtValueNormalized: maxDebtValue > 0 ? (client.totalDebtValue / maxDebtValue) * 100 : 0,
+          totalAccountsNormalized: maxAccounts > 0 ? (client.totalAccounts / maxAccounts) * 100 : 0
+        }));
+        
+        setCompanyTrendData(normalizedData);
       }
     } catch (error) {
       console.error('Error loading company trend data:', error);
       // Create sample data for demonstration
-      const sampleData = Array.from({ length: 10 }, (_, i) => ({
-        client: `Client ${String.fromCharCode(65 + i)}`, 
-        highPriority: Math.floor(25 + Math.random() * 120),
-        mediumPriority: Math.floor(80 + Math.random() * 200),
-        totalDebtValue: Math.floor(8 + Math.random() * 40),
-        totalAccounts: Math.floor(50 + Math.random() * 300),
-        fullName: `Sample Client ${String.fromCharCode(65 + i)}`
-      }));
+      const sampleData = Array.from({ length: 10 }, (_, i) => {
+        const highPriority = Math.floor(25 + Math.random() * 120);
+        const mediumPriority = Math.floor(80 + Math.random() * 200);
+        const totalDebtValue = Math.floor(8 + Math.random() * 40);
+        const totalAccounts = Math.floor(50 + Math.random() * 300);
+        
+        return {
+          client: `Client ${String.fromCharCode(65 + i)}`,
+          highPriority,
+          mediumPriority,
+          totalDebtValue,
+          totalAccounts,
+          fullName: `Sample Client ${String.fromCharCode(65 + i)}`,
+          // Normalized versions for consistent scaling
+          highPriorityNormalized: (highPriority / 145) * 100,
+          mediumPriorityNormalized: (mediumPriority / 280) * 100,
+          totalDebtValueNormalized: (totalDebtValue / 48) * 100,
+          totalAccountsNormalized: (totalAccounts / 350) * 100
+        };
+      });
       setCompanyTrendData(sampleData);
     }
   };
@@ -195,13 +222,13 @@ export function HomePage() {
                   fontWeight: '600'
                 }}
                 formatter={(value: any, name: string) => [
-                  name === 'highPriority' ? `${value} accounts` :
-                  name === 'mediumPriority' ? `${value} accounts` :
-                  name === 'totalDebtValue' ? `N$${value}M` :
-                  `${value} accounts`,
-                  name === 'highPriority' ? 'High Priority' : 
-                  name === 'mediumPriority' ? 'Medium Priority' : 
-                  name === 'totalDebtValue' ? 'Portfolio Value' :
+                  name === 'highPriorityNormalized' ? `${companyTrendData.find(c => c.client === arguments[2])?.highPriority || 0} accounts` :
+                  name === 'mediumPriorityNormalized' ? `${companyTrendData.find(c => c.client === arguments[2])?.mediumPriority || 0} accounts` :
+                  name === 'totalDebtValueNormalized' ? `N$${companyTrendData.find(c => c.client === arguments[2])?.totalDebtValue || 0}M` :
+                  `${companyTrendData.find(c => c.client === arguments[2])?.totalAccounts || 0} accounts`,
+                  name === 'highPriorityNormalized' ? 'High Priority' : 
+                  name === 'mediumPriorityNormalized' ? 'Medium Priority' : 
+                  name === 'totalDebtValueNormalized' ? 'Portfolio Value' :
                   'Total Accounts'
                 ]}
                 labelFormatter={(label) => {
@@ -209,20 +236,20 @@ export function HomePage() {
                   return `${client?.fullName || label}`;
                 }}
                 labelStyle={{ 
-                  fontSize: '12px', 
+                  fontSize: '11px', 
                   fontWeight: '700',
                   color: '#000000',
                   marginBottom: '4px'
                 }}
                 itemStyle={{ 
-                  fontSize: '11px',
+                  fontSize: '10px',
                   fontWeight: '600',
                   color: '#1f2937'
                 }}
               />
               <Area
                 type="monotone"
-                dataKey="highPriority"
+                dataKey="highPriorityNormalized"
                 stroke="rgba(0,171,174,0.6)"
                 strokeWidth={2.5}
                 fill="url(#highPriorityGradient)"
@@ -240,7 +267,7 @@ export function HomePage() {
               />
               <Area
                 type="monotone"
-                dataKey="mediumPriority"
+                dataKey="mediumPriorityNormalized"
                 stroke="rgba(0,171,174,0.4)"
                 strokeWidth={2}
                 fill="url(#mediumPriorityGradient)"
@@ -258,7 +285,7 @@ export function HomePage() {
               />
               <Area
                 type="monotone"
-                dataKey="totalDebtValue"
+                dataKey="totalDebtValueNormalized"
                 stroke="rgba(139,92,246,0.5)"
                 strokeWidth={1.5}
                 fill="url(#debtValueGradient)"
@@ -276,7 +303,7 @@ export function HomePage() {
               />
               <Area
                 type="monotone"
-                dataKey="totalAccounts"
+                dataKey="totalAccountsNormalized"
                 stroke="rgba(59,130,246,0.4)"
                 strokeWidth={1.5}
                 fill="url(#totalAccountsGradient)"
