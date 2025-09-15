@@ -34,12 +34,6 @@ export function GlobalSidebar() {
       iconName: 'Home'
     },
     {
-      name: 'Overview',
-      icon: BarChart3,
-      path: '/dashboard/overview',
-      iconName: 'BarChart3'
-    },
-    {
       name: 'Campaigns',
       icon: Target,
       path: '/dashboard/campaigns',
