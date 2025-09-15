@@ -177,16 +177,16 @@ export function HomePage() {
               />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)', 
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                 backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+                 border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '12px',
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                  backdropFilter: 'blur(60px) saturate(180%) contrast(110%) brightness(110%)',
-                  WebkitBackdropFilter: 'blur(60px) saturate(180%) contrast(110%) brightness(110%)',
+                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                 backdropFilter: 'blur(40px) saturate(150%) contrast(105%) brightness(105%)',
+                 WebkitBackdropFilter: 'blur(40px) saturate(150%) contrast(105%) brightness(105%)',
                   fontSize: '11px',
-                  padding: '10px 14px',
+                 padding: '12px 16px',
                   color: '#000000',
-                  fontWeight: '700'
+                 fontWeight: '300'
                 }}
                 formatter={(value: any, name: string) => [
                   name === 'highPriority' ? `${value} accounts` :
@@ -201,13 +201,13 @@ export function HomePage() {
                 }}
                 labelStyle={{ 
                   fontSize: '12px', 
-                  fontWeight: '800',
+                 fontWeight: '400',
                   color: '#000000',
                   marginBottom: '4px'
                 }}
                 itemStyle={{ 
                   fontSize: '11px',
-                  fontWeight: '700',
+                 fontWeight: '300',
                   color: '#111827'
                 }}
               />
