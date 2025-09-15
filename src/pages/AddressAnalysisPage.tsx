@@ -1,15 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download, MapPin, Home, Building, AlertTriangle, User, Search } from 'lucide-react';
+import { ArrowLeft, Download, MapPin, Home, Building, AlertTriangle, Map, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { AnalysisResults } from '../utils/csvProcessor';
 import { SupabaseService } from '../utils/supabaseService';
 import { GoogleMapsHeatmap } from '../components/GoogleMapsHeatmap';
+
+interface HeatmapData {
+  area: string;
+  coordinates: { lat: number; lng: number };
+  intensity: number;
+  category: 'high-income' | 'mid-income' | 'low-income';
+  count: number;
+  addresses: string[];
+}
+
+interface HeatmapSummary {
+  totalAddresses: number;
+  highIncomeCount: number;
+  midIncomeCount: number;
+  lowIncomeCount: number;
+  unmappedCount: number;
+}
 
 export function AddressAnalysisPage() {
   const navigate = useNavigate();
