@@ -39,50 +39,21 @@ export function HomePage() {
           highPriority: client.high_probability || 0,
           mediumPriority: client.medium_probability || 0,
           totalDebtValue: (client.total_debt_value || 0) / 1000000, // Convert to millions
-          totalAccounts: client.total_accounts || 0,
           fullName: client.client_name
         }));
         
-        // Normalize data to prevent flat lines from outliers (like NIDA)
-        const maxHighPriority = Math.max(...formattedData.map(d => d.highPriority));
-        const maxMediumPriority = Math.max(...formattedData.map(d => d.mediumPriority));
-        const maxDebtValue = Math.max(...formattedData.map(d => d.totalDebtValue));
-        const maxAccounts = Math.max(...formattedData.map(d => d.totalAccounts));
-        
-        const normalizedData = formattedData.map(client => ({
-          ...client,
-          // Normalize to 0-100 scale for better visualization
-          highPriorityNormalized: maxHighPriority > 0 ? (client.highPriority / maxHighPriority) * 100 : 0,
-          mediumPriorityNormalized: maxMediumPriority > 0 ? (client.mediumPriority / maxMediumPriority) * 100 : 0,
-          totalDebtValueNormalized: maxDebtValue > 0 ? (client.totalDebtValue / maxDebtValue) * 100 : 0,
-          totalAccountsNormalized: maxAccounts > 0 ? (client.totalAccounts / maxAccounts) * 100 : 0
-        }));
-        
-        setCompanyTrendData(normalizedData);
+        setCompanyTrendData(formattedData);
       }
     } catch (error) {
       console.error('Error loading company trend data:', error);
       // Create sample data for demonstration
-      const sampleData = Array.from({ length: 10 }, (_, i) => {
-        const highPriority = Math.floor(25 + Math.random() * 120);
-        const mediumPriority = Math.floor(80 + Math.random() * 200);
-        const totalDebtValue = Math.floor(8 + Math.random() * 40);
-        const totalAccounts = Math.floor(50 + Math.random() * 300);
-        
-        return {
-          client: `Client ${String.fromCharCode(65 + i)}`,
-          highPriority,
-          mediumPriority,
-          totalDebtValue,
-          totalAccounts,
-          fullName: `Sample Client ${String.fromCharCode(65 + i)}`,
-          // Normalized versions for consistent scaling
-          highPriorityNormalized: (highPriority / 145) * 100,
-          mediumPriorityNormalized: (mediumPriority / 280) * 100,
-          totalDebtValueNormalized: (totalDebtValue / 48) * 100,
-          totalAccountsNormalized: (totalAccounts / 350) * 100
-        };
-      });
+      const sampleData = Array.from({ length: 10 }, (_, i) => ({
+        client: `Client ${String.fromCharCode(65 + i)}`, 
+        highPriority: Math.floor(25 + Math.random() * 120),
+        mediumPriority: Math.floor(80 + Math.random() * 200),
+        totalDebtValue: Math.floor(8 + Math.random() * 40),
+        fullName: `Sample Client ${String.fromCharCode(65 + i)}`
+      }));
       setCompanyTrendData(sampleData);
     }
   };
@@ -192,10 +163,6 @@ export function HomePage() {
                   <stop offset="5%" stopColor="rgb(139,92,246)" stopOpacity={0.06}/>
                   <stop offset="95%" stopColor="rgb(139,92,246)" stopOpacity={0.01}/>
                 </linearGradient>
-                <linearGradient id="totalAccountsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="rgb(59,130,246)" stopOpacity={0.05}/>
-                  <stop offset="95%" stopColor="rgb(59,130,246)" stopOpacity={0.008}/>
-                </linearGradient>
               </defs>
               <XAxis 
                 dataKey="client" 
@@ -222,34 +189,31 @@ export function HomePage() {
                   fontWeight: '600'
                 }}
                 formatter={(value: any, name: string) => [
-                  name === 'highPriorityNormalized' ? `${companyTrendData.find(c => c.client === arguments[2])?.highPriority || 0} accounts` :
-                  name === 'mediumPriorityNormalized' ? `${companyTrendData.find(c => c.client === arguments[2])?.mediumPriority || 0} accounts` :
-                  name === 'totalDebtValueNormalized' ? `N$${companyTrendData.find(c => c.client === arguments[2])?.totalDebtValue || 0}M` :
-                  `${companyTrendData.find(c => c.client === arguments[2])?.totalAccounts || 0} accounts`,
-                  name === 'highPriorityNormalized' ? 'High Priority' : 
-                  name === 'mediumPriorityNormalized' ? 'Medium Priority' : 
-                  name === 'totalDebtValueNormalized' ? 'Portfolio Value' :
-                  'Total Accounts'
+                  name === 'highPriority' ? `${value} accounts` :
+                  name === 'mediumPriority' ? `${value} accounts` :
+                  `N$${value}M`,
+                  name === 'highPriority' ? 'High Priority' : 
+                  name === 'mediumPriority' ? 'Medium Priority' : 'Portfolio Value'
                 ]}
                 labelFormatter={(label) => {
                   const client = companyTrendData.find(c => c.client === label);
                   return `${client?.fullName || label}`;
                 }}
                 labelStyle={{ 
-                  fontSize: '11px', 
+                  fontSize: '12px', 
                   fontWeight: '700',
                   color: '#000000',
                   marginBottom: '4px'
                 }}
                 itemStyle={{ 
-                  fontSize: '10px',
+                  fontSize: '11px',
                   fontWeight: '600',
                   color: '#1f2937'
                 }}
               />
               <Area
                 type="monotone"
-                dataKey="highPriorityNormalized"
+                dataKey="highPriority"
                 stroke="rgba(0,171,174,0.6)"
                 strokeWidth={2.5}
                 fill="url(#highPriorityGradient)"
@@ -267,7 +231,7 @@ export function HomePage() {
               />
               <Area
                 type="monotone"
-                dataKey="mediumPriorityNormalized"
+                dataKey="mediumPriority"
                 stroke="rgba(0,171,174,0.4)"
                 strokeWidth={2}
                 fill="url(#mediumPriorityGradient)"
@@ -285,7 +249,7 @@ export function HomePage() {
               />
               <Area
                 type="monotone"
-                dataKey="totalDebtValueNormalized"
+                dataKey="totalDebtValue"
                 stroke="rgba(139,92,246,0.5)"
                 strokeWidth={1.5}
                 fill="url(#debtValueGradient)"
@@ -299,24 +263,6 @@ export function HomePage() {
                   stroke: 'white', 
                   strokeWidth: 2,
                   filter: 'drop-shadow(0 2px 4px rgba(139,92,246,0.3))'
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="totalAccountsNormalized"
-                stroke="rgba(59,130,246,0.4)"
-                strokeWidth={1.5}
-                fill="url(#totalAccountsGradient)"
-                dot={false}
-                isAnimationActive={true}
-                animationBegin={1800}
-                animationDuration={2500}
-                activeDot={{ 
-                  r: 3, 
-                  fill: 'rgb(59,130,246)', 
-                  stroke: 'white', 
-                  strokeWidth: 2,
-                  filter: 'drop-shadow(0 2px 4px rgba(59,130,246,0.3))'
                 }}
               />
             </AreaChart>
