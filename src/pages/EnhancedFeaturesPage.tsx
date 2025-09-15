@@ -468,8 +468,8 @@ export function EnhancedFeaturesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Clients</SelectItem>
-            <SelectItem value="high-value">High Value (>N$10M)</SelectItem>
-            <SelectItem value="high-performance">High Performance (>7 score)</SelectItem>
+            <SelectItem value="high-value">High Value (&gt;N$10M)</SelectItem>
+            <SelectItem value="high-performance">High Performance (&gt;7 score)</SelectItem>
             <SelectItem value="urgent">Urgent Actions</SelectItem>
             <SelectItem value="tier-high">High Performers Only</SelectItem>
           </SelectContent>
