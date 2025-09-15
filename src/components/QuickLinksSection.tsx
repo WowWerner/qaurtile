@@ -197,10 +197,10 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
           </div>
 
           {/* Tab Content */}
-          <div className="px-6 pb-6 h-64 overflow-y-auto">
+          <div className="h-64 overflow-y-auto">
             {/* Recent Items Tab */}
             {activeTab === 'recent' && (
-              <div className="space-y-2">
+              <div className="space-y-2 px-6 pb-6">
                 {recentItems.length > 0 ? (
                   <>
                     <div className="flex items-center justify-between mb-3">
@@ -277,7 +277,7 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
 
             {/* Pinned Items Tab */}
             {activeTab === 'pinned' && (
-              <div className="space-y-2">
+              <div className="space-y-2 px-6 pb-6">
                 {pinnedItems.length > 0 ? (
                   <>
                     <div className="text-sm font-medium text-gray-700 mb-3">Pinned Items</div>
@@ -327,7 +327,7 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
 
             {/* Quick Actions Tab */}
             {activeTab === 'quick' && (
-              <div className="space-y-2">
+              <div className="space-y-2 px-6 pb-6">
                 <div className="text-sm font-medium text-gray-700 mb-3">Quick Actions</div>
                 {quickActions
                   .filter(action => !UserInteractionsService.isItemPinned(action.id))
