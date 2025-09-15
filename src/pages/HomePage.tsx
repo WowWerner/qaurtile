@@ -13,85 +13,54 @@ import { Brain, TrendingUp, Users, BarChart3, Target, DollarSign, Clock, Buildin
 
 export function HomePage() {
   const navigate = useNavigate();
-  const [clientPerformanceData, setClientPerformanceData] = useState<any[]>([]);
+  const [companyTrendData, setCompanyTrendData] = useState<any[]>([]);
   
   // Track page views
   usePageTracking();
 
   useEffect(() => {
-    loadClientPerformanceData();
+    loadCompanyTrendData();
   }, []);
 
-  const loadClientPerformanceData = async () => {
+  const loadCompanyTrendData = async () => {
     try {
       const { data, error } = await supabase
-        .from('client_account_predictions')
-        .select('client_name, client_id, debt_amount, prediction_score, probability_category')
-        .not('client_name', 'ilike', '%test%')
-        .order('client_name', { ascending: true });
+        .from('client_summary_dashboard')
+        .select('*')
+        .order('total_debt_value', { ascending: false })
+        .limit(12);
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Group by client and calculate metrics
-        const clientMap = new Map();
+        // Format data for multi-line chart
+        const formattedData = data.map((client, index) => ({
+          client: client.client_name?.substring(0, 12) || `Client ${index + 1}`,
+          highPriority: client.high_probability || 0,
+          mediumPriority: client.medium_probability || 0,
+          lowPriority: client.low_probability || 0,
+          debtValue: (client.total_debt_value || 0) / 1000000, // Convert to millions
+          avgScore: (client.avg_prediction_score || 0) * 10, // Scale for visualization
+          urgentActions: client.urgent_actions || 0,
+          fullName: client.client_name
+        }));
         
-        data.forEach(account => {
-          const clientName = account.client_name;
-          if (!clientMap.has(clientName)) {
-            clientMap.set(clientName, {
-              clientName,
-              totalAccounts: 0,
-              highPriority: 0,
-              mediumPriority: 0,
-              lowPriority: 0,
-              totalDebtValue: 0,
-              avgScore: 0
-            });
-          }
-          
-          const client = clientMap.get(clientName);
-          client.totalAccounts += 1;
-          client.totalDebtValue += account.debt_amount || 0;
-          client.avgScore += account.prediction_score || 0;
-          
-          if (account.probability_category === 'HIGH') {
-            client.highPriority += 1;
-          } else if (account.probability_category === 'MEDIUM') {
-            client.mediumPriority += 1;
-          } else if (account.probability_category === 'LOW') {
-            client.lowPriority += 1;
-          }
-        });
-        
-        // Convert to array and calculate averages
-        const formattedData = Array.from(clientMap.values())
-          .map(client => ({
-            client: client.clientName?.substring(0, 12) || 'Unknown',
-            highPriority: client.highPriority,
-            mediumPriority: client.mediumPriority,
-            totalAccounts: client.totalAccounts,
-            debtValue: client.totalDebtValue / 1000000, // Convert to millions
-            avgScore: client.avgScore / client.totalAccounts,
-            fullName: client.clientName
-          }))
-          .sort((a, b) => b.highPriority - a.highPriority)
-          .slice(0, 15); // Top 15 clients by high priority
-          
-        setClientPerformanceData(formattedData);
+        setCompanyTrendData(formattedData);
       }
     } catch (error) {
-      console.error('Error loading client performance data:', error);
-      // Create sample data if real data is not available
-      const sampleData = Array.from({ length: 12 }, (_, i) => ({
-        client: `Client ${i + 1}`,
-        highPriority: Math.floor(20 + Math.random() * 100),
-        mediumPriority: Math.floor(50 + Math.random() * 150),
-        debtValue: Math.floor(5 + Math.random() * 25), // In millions
-        avgScore: 5 + Math.random() * 5,
-        fullName: `Sample Client ${i + 1}`
+      console.error('Error loading company trend data:', error);
+      // Create sample data for demonstration
+      const sampleData = Array.from({ length: 10 }, (_, i) => ({
+        client: `Client ${String.fromCharCode(65 + i)}`,
+        highPriority: Math.floor(25 + Math.random() * 120),
+        mediumPriority: Math.floor(80 + Math.random() * 200),
+        lowPriority: Math.floor(30 + Math.random() * 100),
+        debtValue: Math.floor(8 + Math.random() * 40),
+        avgScore: Math.floor(45 + Math.random() * 50),
+        urgentActions: Math.floor(Math.random() * 25),
+        fullName: `Sample Client ${String.fromCharCode(65 + i)}`
       }));
-      setClientPerformanceData(sampleData);
+      setCompanyTrendData(sampleData);
     }
   };
   const handleSignOut = async () => {
@@ -182,19 +151,23 @@ export function HomePage() {
         </h2>
       </div>
       
-      {/* High Priority Accounts by Client Graph */}
-      {clientPerformanceData.length > 0 && (
+      {/* Company Performance Trend Graph */}
+      {companyTrendData.length > 0 && (
         <div className="w-full h-20 mb-12 -mx-4">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={clientPerformanceData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+            <AreaChart data={companyTrendData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <defs>
                 <linearGradient id="highPriorityGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="rgb(0,171,174)" stopOpacity={0.1}/>
                   <stop offset="95%" stopColor="rgb(0,171,174)" stopOpacity={0.02}/>
                 </linearGradient>
                 <linearGradient id="mediumPriorityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="rgb(100,200,150)" stopOpacity={0.08}/>
-                  <stop offset="95%" stopColor="rgb(100,200,150)" stopOpacity={0.01}/>
+                  <stop offset="5%" stopColor="rgb(251,146,60)" stopOpacity={0.08}/>
+                  <stop offset="95%" stopColor="rgb(251,146,60)" stopOpacity={0.01}/>
+                </linearGradient>
+                <linearGradient id="debtValueGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="rgb(139,92,246)" stopOpacity={0.06}/>
+                  <stop offset="95%" stopColor="rgb(139,92,246)" stopOpacity={0.01}/>
                 </linearGradient>
               </defs>
               <XAxis 
@@ -216,12 +189,15 @@ export function HomePage() {
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
                 formatter={(value: any, name: string) => [
-                  `${value} accounts`, 
-                  name === 'highPriority' ? 'High Priority' : 'Medium Priority'
+                  name === 'highPriority' ? `${value} accounts` :
+                  name === 'mediumPriority' ? `${value} accounts` :
+                  `N$${value}M`,
+                  name === 'highPriority' ? 'High Priority' : 
+                  name === 'mediumPriority' ? 'Medium Priority' : 'Portfolio Value'
                 ]}
                 labelFormatter={(label) => {
-                  const client = clientPerformanceData.find(c => c.client === label);
-                  return `${client?.fullName || label} (${client?.totalAccounts || 0} total accounts)`;
+                  const client = companyTrendData.find(c => c.client === label);
+                  return `${client?.fullName || label}`;
                 }}
               />
               <Area
@@ -241,13 +217,27 @@ export function HomePage() {
               <Area
                 type="monotone"
                 dataKey="mediumPriority"
-                stroke="rgba(100,200,150,0.4)"
+                stroke="rgba(251,146,60,0.4)"
                 strokeWidth={1.5}
                 fill="url(#mediumPriorityGradient)"
                 dot={false}
                 activeDot={{ 
                   r: 3, 
-                  fill: 'rgb(100,200,150)', 
+                  fill: 'rgb(251,146,60)', 
+                  stroke: 'white', 
+                  strokeWidth: 2 
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="debtValue"
+                stroke="rgba(139,92,246,0.3)"
+                strokeWidth={1}
+                fill="url(#debtValueGradient)"
+                dot={false}
+                activeDot={{ 
+                  r: 2, 
+                  fill: 'rgb(139,92,246)', 
                   stroke: 'white', 
                   strokeWidth: 2 
                 }}
