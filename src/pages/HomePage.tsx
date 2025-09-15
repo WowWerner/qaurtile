@@ -35,13 +35,10 @@ export function HomePage() {
       if (data && data.length > 0) {
         // Format data for multi-line chart
         const formattedData = data.map((client, index) => ({
-          client: client.client_name?.substring(0, 12) || `Client ${index + 1}`,
+          client: client.client_name?.substring(0, 10) || `Client ${index + 1}`,
           highPriority: client.high_probability || 0,
           mediumPriority: client.medium_probability || 0,
-          lowPriority: client.low_probability || 0,
-          debtValue: (client.total_debt_value || 0) / 1000000, // Convert to millions
-          avgScore: (client.avg_prediction_score || 0) * 10, // Scale for visualization
-          urgentActions: client.urgent_actions || 0,
+          totalDebtValue: (client.total_debt_value || 0) / 1000000, // Convert to millions
           fullName: client.client_name
         }));
         
@@ -51,13 +48,10 @@ export function HomePage() {
       console.error('Error loading company trend data:', error);
       // Create sample data for demonstration
       const sampleData = Array.from({ length: 10 }, (_, i) => ({
-        client: `Client ${String.fromCharCode(65 + i)}`,
+        client: `Client ${String.fromCharCode(65 + i)}`, 
         highPriority: Math.floor(25 + Math.random() * 120),
         mediumPriority: Math.floor(80 + Math.random() * 200),
-        lowPriority: Math.floor(30 + Math.random() * 100),
-        debtValue: Math.floor(8 + Math.random() * 40),
-        avgScore: Math.floor(45 + Math.random() * 50),
-        urgentActions: Math.floor(Math.random() * 25),
+        totalDebtValue: Math.floor(8 + Math.random() * 40),
         fullName: `Sample Client ${String.fromCharCode(65 + i)}`
       }));
       setCompanyTrendData(sampleData);
@@ -183,15 +177,16 @@ export function HomePage() {
               />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.85)', 
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+                  border: 'none',
                   borderRadius: '12px',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08)',
-                  backdropFilter: 'blur(20px) saturate(180%)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(40px) saturate(200%) contrast(120%)',
+                  WebkitBackdropFilter: 'blur(40px) saturate(200%) contrast(120%)',
                   fontSize: '11px',
                   padding: '10px 14px',
-                  color: '#1f2937',
-                  fontWeight: '500'
+                  color: '#111827',
+                  fontWeight: '600'
                 }}
                 formatter={(value: any, name: string) => [
                   name === 'highPriority' ? `${value} accounts` :
@@ -206,26 +201,26 @@ export function HomePage() {
                 }}
                 labelStyle={{ 
                   fontSize: '12px', 
-                  fontWeight: '600',
-                  color: '#111827',
+                  fontWeight: '700',
+                  color: '#000000',
                   marginBottom: '4px'
                 }}
                 itemStyle={{ 
                   fontSize: '11px',
-                  fontWeight: '500',
-                  color: '#374151'
+                  fontWeight: '600',
+                  color: '#1f2937'
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="highPriority"
-                stroke="rgba(0,171,174,0.3)"
-                strokeWidth={2}
+                stroke="rgba(0,171,174,0.6)"
+                strokeWidth={2.5}
                 fill="url(#highPriorityGradient)"
                 dot={false}
-                animationBegin={300}
-                animationDuration={2000}
-                animationEasing="ease-out"
+                isAnimationActive={true}
+                animationBegin={400}
+                animationDuration={2500}
                 activeDot={{ 
                   r: 4, 
                   fill: 'rgb(0,171,174)', 
@@ -237,15 +232,15 @@ export function HomePage() {
               <Area
                 type="monotone"
                 dataKey="mediumPriority"
-                stroke="rgba(0,171,174,0.25)"
-                strokeWidth={1.5}
+                stroke="rgba(0,171,174,0.4)"
+                strokeWidth={2}
                 fill="url(#mediumPriorityGradient)"
                 dot={false}
-                animationBegin={800}
-                animationDuration={2200}
-                animationEasing="ease-out"
+                isAnimationActive={true}
+                animationBegin={900}
+                animationDuration={2700}
                 activeDot={{ 
-                  r: 3, 
+                  r: 3.5, 
                   fill: 'rgb(0,171,174)', 
                   stroke: 'white', 
                   strokeWidth: 2,
@@ -254,14 +249,14 @@ export function HomePage() {
               />
               <Area
                 type="monotone"
-                dataKey="debtValue"
-                stroke="rgba(139,92,246,0.3)"
-                strokeWidth={1}
+                dataKey="totalDebtValue"
+                stroke="rgba(139,92,246,0.5)"
+                strokeWidth={1.5}
                 fill="url(#debtValueGradient)"
                 dot={false}
-                animationBegin={1300}
-                animationDuration={2400}
-                animationEasing="ease-out"
+                isAnimationActive={true}
+                animationBegin={1400}
+                animationDuration={3000}
                 activeDot={{ 
                   r: 2, 
                   fill: 'rgb(139,92,246)', 
