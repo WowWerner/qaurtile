@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BarChart3, Target, DollarSign, Building, UserCheck, Clock, Home, ChevronUp, ChevronDown } from 'lucide-react';
+import { UserInteractionsService } from '../utils/userInteractions';
 
 export function GlobalSidebar() {
   const navigate = useNavigate();
@@ -12,41 +13,61 @@ export function GlobalSidebar() {
     return null;
   }
 
+  const handleNavigation = (path: string, name: string, icon: string) => {
+    // Track interaction
+    UserInteractionsService.trackInteraction({
+      id: path,
+      title: `${name} Dashboard`,
+      path,
+      icon,
+      type: 'page',
+      category: 'Dashboard'
+    });
+    
+    navigate(path);
+  };
   const menuItems = [
     {
       name: 'Home',
       icon: Home,
-      path: '/'
+      path: '/',
+      iconName: 'Home'
     },
     {
       name: 'Overview',
       icon: BarChart3,
-      path: '/dashboard/overview'
+      path: '/dashboard/overview',
+      iconName: 'BarChart3'
     },
     {
       name: 'Campaigns',
       icon: Target,
-      path: '/dashboard/campaigns'
+      path: '/dashboard/campaigns',
+      iconName: 'Target'
     },
     {
       name: 'Finance',
       icon: DollarSign,
-      path: '/dashboard/finance'
+      path: '/dashboard/finance',
+      iconName: 'DollarSign'
     },
     {
       name: 'Clients',
       icon: Building,
-      path: '/dashboard/clients'
+      path: '/dashboard/clients',
+      iconName: 'Building'
     },
     {
       name: 'HR',
       icon: UserCheck,
-      path: '/dashboard/hr'
+      path: '/dashboard/hr',
+      iconName: 'UserCheck'
     },
     {
       name: 'Productivity',
       icon: Clock,
-      path: '/dashboard/productivity'
+      path: '/dashboard/productivity',
+      iconName: 'Clock'
     }
   ];
 
@@ -65,7 +86,7 @@ export function GlobalSidebar() {
               return (
                 <div 
                   key={item.name}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => handleNavigation(item.path, item.name, item.iconName)}
                   className="group relative flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1"
                 >
                   <div className="flex flex-col items-center">

@@ -28,9 +28,13 @@ import { LegalAnalysisPage } from './pages/LegalAnalysisPage';
 import { EnhancedFeaturesPage } from './pages/EnhancedFeaturesPage';
 import { AccountDetailsPage } from './pages/AccountDetailsPage';
 import { GlobalSidebar } from './components/GlobalSidebar';
+import { usePageTracking } from './hooks/usePageTracking';
 import './App.css';
 
 function App() {
+  // Enable page tracking across the entire app
+  usePageTracking();
+  
   return (
     <Router>
       <div className="min-h-screen bg-white">

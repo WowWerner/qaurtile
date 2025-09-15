@@ -1,11 +1,18 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthService } from '../utils/auth';
 import { DigitalClock } from '../components/DigitalClock';
 import { PredictionCard } from '../components/PredictionCard';
+import { QuickLinksSection } from '../components/QuickLinksSection';
+import { UserInteractionsService } from '../utils/userInteractions';
+import { usePageTracking } from '../hooks/usePageTracking';
 import { Brain, TrendingUp, Users, BarChart3, Target, DollarSign, Clock, Building, UserCheck } from 'lucide-react';
 
 export function HomePage() {
   const navigate = useNavigate();
+  
+  // Track page views
+  usePageTracking();
 
   const handleSignOut = async () => {
     try {
@@ -16,6 +23,19 @@ export function HomePage() {
     }
   };
 
+  const handleCardClick = (path: string, title: string, icon: string, category: string) => {
+    // Track interaction before navigation
+    UserInteractionsService.trackInteraction({
+      id: path,
+      title,
+      path,
+      icon,
+      type: 'page',
+      category
+    });
+    
+    navigate(path);
+  };
   const cards = [
     {
       id: 'client-centric',
@@ -23,7 +43,7 @@ export function HomePage() {
       boldWords: ['Client'],
       icon: Brain,
       color: 'rgb(0, 171, 174)',
-      onClick: () => navigate('/select-client')
+      onClick: () => handleCardClick('/select-client', 'Client Selection', 'Brain', 'Client Management')
     },
     {
       id: 'action-based',
@@ -31,7 +51,7 @@ export function HomePage() {
       boldWords: ['Workforce'],
       icon: TrendingUp,
       color: 'rgb(100, 200, 150)',
-      onClick: () => navigate('/action-analysis')
+      onClick: () => handleCardClick('/action-analysis', 'Workforce Planning', 'TrendingUp', 'Planning')
     },
     {
       id: 'intelligent-account',
@@ -39,7 +59,7 @@ export function HomePage() {
       boldWords: ['Intelligent'],
       icon: Users,
       color: 'rgb(150, 150, 255)',
-      onClick: () => navigate('/intelligence-center')
+      onClick: () => handleCardClick('/intelligence-center', 'Intelligence Center', 'Users', 'Analysis')
     },
     {
       id: 'account-predictive',
@@ -47,7 +67,7 @@ export function HomePage() {
       boldWords: ['Account'],
       icon: BarChart3,
       color: 'rgb(139, 92, 246)',
-      onClick: () => navigate('/enhanced-features')
+      onClick: () => handleCardClick('/enhanced-features', 'Enhanced Features', 'BarChart3', 'Analysis')
     }
   ];
 
@@ -91,6 +111,10 @@ export function HomePage() {
         ))}
       </div>
 
+      {/* Quick Links and Recently Viewed Section */}
+      <div className="mt-16">
+        <QuickLinksSection />
+      </div>
     </div>
   );
 }

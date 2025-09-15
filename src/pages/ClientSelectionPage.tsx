@@ -4,6 +4,8 @@ import { ArrowLeft, Grid3X3, List, Search } from 'lucide-react';
 import { ClientCard } from '../components/ClientCard';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { UserInteractionsService } from '../utils/userInteractions';
+import { usePageTracking } from '../hooks/usePageTracking';
 import { supabase } from '../lib/supabase';
 
 interface ClientSummary {
@@ -22,6 +24,10 @@ interface ClientSummary {
 
 export function ClientSelectionPage() {
   const navigate = useNavigate();
+  
+  // Track page views
+  usePageTracking();
+  
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState<ClientSummary[]>([]);
@@ -97,6 +103,19 @@ export function ClientSelectionPage() {
     }
   };
 
+  const handleClientClick = (client: ClientSummary) => {
+    // Track client selection interaction
+    UserInteractionsService.trackInteraction({
+      id: `client-${client.id}`,
+      title: `${client.name} Data`,
+      path: `/client/${client.id}`,
+      icon: 'Building',
+      type: 'page',
+      category: 'Client Management'
+    });
+    
+    navigate(`/client/${client.id}`);
+  };
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.industry.toLowerCase().includes(searchTerm.toLowerCase())
@@ -184,7 +203,7 @@ export function ClientSelectionPage() {
             key={client.id}
             client={client}
             viewMode={viewMode}
-            onClick={() => navigate(`/client/${client.id}`)}
+            onClick={() => handleClientClick(client)}
           />
         ))}
       </div>
