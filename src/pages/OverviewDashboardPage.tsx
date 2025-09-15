@@ -232,94 +232,6 @@ export function OverviewDashboardPage() {
         </Card>
       </div>
 
-      {/* Model Performance and Financial Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* AI Model Status */}
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-light text-gray-800">
-              AI Prediction Model Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                <div>
-                  <div className="text-sm font-medium text-green-800">Model Confidence</div>
-                  <div className="text-2xl font-light text-green-700">
-                    {metrics?.modelConfidence}%
-                  </div>
-                </div>
-                <Badge className="bg-green-100 text-green-700">
-                  v{metrics?.modelVersion}
-                </Badge>
-              </div>
-
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="text-sm font-medium text-blue-800 mb-2">Most Efficient Action</div>
-                <div className="flex items-center justify-between">
-                  <div className="text-lg font-medium text-blue-700">
-                    Phone Calls
-                  </div>
-                  <div className="text-xl font-light text-blue-600">
-                    12.5%
-                  </div>
-                </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  8,750 actions analyzed
-                </div>
-              </div>
-
-              <div className="p-4 bg-teal-50 rounded-lg border border-teal-200">
-                <div className="text-sm font-medium text-teal-800 mb-2">System Health</div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-teal-700">All systems operational</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Business Performance Snapshot */}
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-light text-gray-800">
-              Business Performance Snapshot
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={businessAreasData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="name" 
-                  fontSize={12}
-                  stroke="#666"
-                />
-                <YAxis fontSize={11} stroke="#666" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#fff', 
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value: any, name: string, props: any) => [
-                    `${value} ${props.payload.metric}`, 
-                    props.payload.name
-                  ]}
-                />
-                <Bar 
-                  dataKey="value" 
-                  radius={[4, 4, 0, 0]}
-                  fill={(entry: any) => entry.color || '#00abae'}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Cross-Functional Insights */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Financial Health */}
@@ -374,20 +286,20 @@ export function OverviewDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Team Productivity */}
-        <Card className="border-gray-200 bg-gradient-to-br from-rose-50 to-pink-50">
+        {/* Best Performing Hour */}
+        <Card className="border-gray-200 bg-gradient-to-br from-purple-50 to-violet-50">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center space-x-2 text-rose-800">
-              <Activity size={18} strokeWidth={1.5} />
-              <span className="font-light text-sm">Team Capacity</span>
+            <CardTitle className="flex items-center space-x-2 text-purple-800">
+              <Clock size={18} strokeWidth={1.5} />
+              <span className="font-light text-sm">Best Performing Hour</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-light text-rose-700">
-              {metrics?.totalAgents || 0}
+            <div className="text-2xl font-light text-purple-700">
+              {metrics ? formatHour(metrics.peakHour) : 'Loading...'}
             </div>
-            <p className="text-xs text-rose-600 mt-1">
-              Peak at {metrics ? formatHour(metrics.peakHour) : '9:00 AM'}
+            <p className="text-xs text-purple-600 mt-1">
+              Score: {metrics?.peakProductivity.toFixed(1) || '0'}/100
             </p>
           </CardContent>
         </Card>
@@ -404,42 +316,16 @@ export function OverviewDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span className="font-medium text-red-800">High Priority Accounts</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="font-medium text-green-800">System Status</span>
                 </div>
-                <div className="text-2xl font-light text-red-700 mb-1">
-                  {metrics?.highPriorityAccounts || 0}
+                <div className="text-2xl font-light text-green-700 mb-1">
+                  All Systems
                 </div>
-                <div className="text-sm text-red-600">
-                  Require immediate attention
-                </div>
-              </div>
-
-              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <span className="font-medium text-orange-800">Campaign Optimization</span>
-                </div>
-                <div className="text-2xl font-light text-orange-700 mb-1">
-                  {(metrics?.campaignEfficiency || 0).toFixed(1)}%
-                </div>
-                <div className="text-sm text-orange-600">
-                  Current efficiency rate
-                </div>
-              </div>
-
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="font-medium text-blue-800">Financial Recovery</span>
-                </div>
-                <div className="text-2xl font-light text-blue-700 mb-1">
-                  N${((metrics?.predictedRecovery || 0) / 1000000).toFixed(1)}M
-                </div>
-                <div className="text-sm text-blue-600">
-                  Predicted recovery potential
+                <div className="text-sm text-green-600">
+                  ✅ Operational and healthy
                 </div>
               </div>
             </div>
@@ -455,23 +341,6 @@ export function OverviewDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* AI Model Performance */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">AI Model Confidence</span>
-                  <span className="text-sm font-bold text-green-600">
-                    {metrics?.modelConfidence}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${metrics?.modelConfidence}%` }}
-                  />
-                </div>
-                <div className="text-xs text-gray-600 mt-1">Model v{metrics?.modelVersion}</div>
-              </div>
-
               {/* Agent Performance */}
               <div>
                 <div className="flex items-center justify-between mb-2">
