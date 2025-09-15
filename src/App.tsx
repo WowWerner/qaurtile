@@ -170,6 +170,11 @@ function App() {
             <EnhancedFeaturesPage />
           </ProtectedRoute>
         } />
+        <Route path="/finance/account/:accountId" element={
+          <ProtectedRoute>
+            <AccountDetailsPage />
+          </ProtectedRoute>
+        } />
       </Routes>
     </div>
   );
