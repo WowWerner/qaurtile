@@ -13,44 +13,85 @@ import { Brain, TrendingUp, Users, BarChart3, Target, DollarSign, Clock, Buildin
 
 export function HomePage() {
   const navigate = useNavigate();
-  const [clientPriorityData, setClientPriorityData] = useState<any[]>([]);
+  const [clientPerformanceData, setClientPerformanceData] = useState<any[]>([]);
   
   // Track page views
   usePageTracking();
 
   useEffect(() => {
-    loadClientPriorityData();
+    loadClientPerformanceData();
   }, []);
 
-  const loadClientPriorityData = async () => {
+  const loadClientPerformanceData = async () => {
     try {
       const { data, error } = await supabase
-        .from('client_summary_dashboard')
-        .select('client_name, high_probability')
+        .from('client_account_predictions')
+        .select('client_name, client_id, debt_amount, prediction_score, probability_category')
         .not('client_name', 'ilike', '%test%')
-        .not('high_probability', 'is', null)
-        .order('high_probability', { ascending: false })
-        .limit(15); // Top 15 clients by high priority accounts
+        .order('client_name', { ascending: true });
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formattedData = data.map(item => ({
-          client: item.client_name?.substring(0, 12) || `Client ${index + 1}`,
-          value: item.high_probability || 0,
-          fullName: item.client_name
-        }));
-        setClientPriorityData(formattedData);
+        // Group by client and calculate metrics
+        const clientMap = new Map();
+        
+        data.forEach(account => {
+          const clientName = account.client_name;
+          if (!clientMap.has(clientName)) {
+            clientMap.set(clientName, {
+              clientName,
+              totalAccounts: 0,
+              highPriority: 0,
+              mediumPriority: 0,
+              lowPriority: 0,
+              totalDebtValue: 0,
+              avgScore: 0
+            });
+          }
+          
+          const client = clientMap.get(clientName);
+          client.totalAccounts += 1;
+          client.totalDebtValue += account.debt_amount || 0;
+          client.avgScore += account.prediction_score || 0;
+          
+          if (account.probability_category === 'HIGH') {
+            client.highPriority += 1;
+          } else if (account.probability_category === 'MEDIUM') {
+            client.mediumPriority += 1;
+          } else if (account.probability_category === 'LOW') {
+            client.lowPriority += 1;
+          }
+        });
+        
+        // Convert to array and calculate averages
+        const formattedData = Array.from(clientMap.values())
+          .map(client => ({
+            client: client.clientName?.substring(0, 12) || 'Unknown',
+            highPriority: client.highPriority,
+            mediumPriority: client.mediumPriority,
+            totalAccounts: client.totalAccounts,
+            debtValue: client.totalDebtValue / 1000000, // Convert to millions
+            avgScore: client.avgScore / client.totalAccounts,
+            fullName: client.clientName
+          }))
+          .sort((a, b) => b.highPriority - a.highPriority)
+          .slice(0, 15); // Top 15 clients by high priority
+          
+        setClientPerformanceData(formattedData);
       }
     } catch (error) {
-      console.error('Error loading client priority data:', error);
+      console.error('Error loading client performance data:', error);
       // Create sample data if real data is not available
       const sampleData = Array.from({ length: 12 }, (_, i) => ({
         client: `Client ${i + 1}`,
-        value: Math.floor(50 + Math.random() * 200),
+        highPriority: Math.floor(20 + Math.random() * 100),
+        mediumPriority: Math.floor(50 + Math.random() * 150),
+        debtValue: Math.floor(5 + Math.random() * 25), // In millions
+        avgScore: 5 + Math.random() * 5,
         fullName: `Sample Client ${i + 1}`
       }));
-      setClientPriorityData(sampleData);
+      setClientPerformanceData(sampleData);
     }
   };
   const handleSignOut = async () => {
@@ -142,14 +183,18 @@ export function HomePage() {
       </div>
       
       {/* High Priority Accounts by Client Graph */}
-      {clientPriorityData.length > 0 && (
+      {clientPerformanceData.length > 0 && (
         <div className="w-full h-20 mb-12 -mx-4">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={clientPriorityData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+            <AreaChart data={clientPerformanceData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <defs>
-                <linearGradient id="clientPriorityGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="highPriorityGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="rgb(0,171,174)" stopOpacity={0.1}/>
                   <stop offset="95%" stopColor="rgb(0,171,174)" stopOpacity={0.02}/>
+                </linearGradient>
+                <linearGradient id="mediumPriorityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="rgb(100,200,150)" stopOpacity={0.08}/>
+                  <stop offset="95%" stopColor="rgb(100,200,150)" stopOpacity={0.01}/>
                 </linearGradient>
               </defs>
               <XAxis 
@@ -166,23 +211,43 @@ export function HomePage() {
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                  border: '1px solid rgba(0,171,174,0.2)',
+                  border: '1px solid rgba(0,171,174,0.3)',
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
-                formatter={(value: any) => [`${value} accounts`, 'High Priority']}
-                labelFormatter={(label) => `Client: ${label}`}
+                formatter={(value: any, name: string) => [
+                  `${value} accounts`, 
+                  name === 'highPriority' ? 'High Priority' : 'Medium Priority'
+                ]}
+                labelFormatter={(label) => {
+                  const client = clientPerformanceData.find(c => c.client === label);
+                  return `${client?.fullName || label} (${client?.totalAccounts || 0} total accounts)`;
+                }}
               />
               <Area
                 type="monotone"
-                dataKey="value"
+                dataKey="highPriority"
                 stroke="rgba(0,171,174,0.3)"
                 strokeWidth={2}
-                fill="url(#clientPriorityGradient)"
+                fill="url(#highPriorityGradient)"
                 dot={false}
                 activeDot={{ 
                   r: 4, 
                   fill: 'rgb(0,171,174)', 
+                  stroke: 'white', 
+                  strokeWidth: 2 
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="mediumPriority"
+                stroke="rgba(100,200,150,0.4)"
+                strokeWidth={1.5}
+                fill="url(#mediumPriorityGradient)"
+                dot={false}
+                activeDot={{ 
+                  r: 3, 
+                  fill: 'rgb(100,200,150)', 
                   stroke: 'white', 
                   strokeWidth: 2 
                 }}
