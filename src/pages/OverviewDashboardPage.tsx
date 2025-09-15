@@ -1,153 +1,122 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Users, Target, Clock, Award, Activity, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Award, TrendingUp, Clock, Target, DollarSign, Users, Activity, Phone, Building } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { supabase } from '../lib/supabase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-interface OverviewMetrics {
+interface DashboardMetrics {
+  // HR Metrics
   topAgent: {
     name: string;
     settlementRate: number;
     totalAccounts: number;
   };
-  totalQualifyingAccounts: number;
-  mostProductiveHour: {
-    hour: number;
-    productivityScore: number;
-  };
+  totalAgents: number;
+  
+  // Financial Metrics
+  totalPortfolioValue: number;
+  predictedRecovery: number;
+  highPriorityAccounts: number;
+  
+  // Campaign Metrics
+  totalActions: number;
+  totalSettlements: number;
+  campaignEfficiency: number;
+  
+  // Productivity Metrics
+  peakHour: number;
+  peakProductivity: number;
+  
+  // Client Metrics
+  activeClients: number;
+  avgClientSettlementRate: number;
+  
+  // Model Metrics
   modelConfidence: number;
   modelVersion: string;
-  mostEfficientAction: {
-    actionType: string;
-    successRate: number;
-    volume: number;
-  };
-}
-
-interface AgentPerformance {
-  assigned_agent: string;
-  total_accounts: number;
-  settlements: number;
-  settlement_rate: number;
-  total_recovered: number;
-  daily_actions: number;
 }
 
 export function OverviewDashboardPage() {
   const navigate = useNavigate();
-  const [metrics, setMetrics] = useState<OverviewMetrics | null>(null);
-  const [topAgents, setTopAgents] = useState<AgentPerformance[]>([]);
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadOverviewData();
+    loadDiverseMetrics();
   }, []);
 
-  const loadOverviewData = async () => {
+  const loadDiverseMetrics = async () => {
     try {
       setLoading(true);
       
-      // Get top performing agent from agent performance table
-      const { data: agentData, error: agentError } = await supabase
-        .from('dc_agent_performance')
-        .select('*')
-        .order('settlement_rate', { ascending: false })
-        .limit(10);
+      // Load data from multiple sources
+      const [
+        agentPerformanceResult,
+        enhancedFeaturesResult,
+        campaignSummaryResult,
+        hourlyProductivityResult,
+        clientPatternsResult,
+        highPriorityResult
+      ] = await Promise.all([
+        supabase.from('dc_agent_performance').select('*').order('settlement_rate', { ascending: false }).limit(1),
+        supabase.from('enhanced_features_with_actions').select('account_id, initial_value'),
+        supabase.from('dc_campaign_summary').select('*'),
+        supabase.from('dc_hourly_productivity').select('*').order('productivity_score', { ascending: false }).limit(1),
+        supabase.from('dc_client_patterns').select('*'),
+        supabase.from('dc_high_priority_accounts').select('*')
+      ]);
 
-      if (agentError) throw agentError;
+      // Process HR metrics
+      const topAgent = agentPerformanceResult.data?.[0] ? {
+        name: agentPerformanceResult.data[0].assigned_agent || 'Unknown',
+        settlementRate: (agentPerformanceResult.data[0].settlement_rate || 0),
+        totalAccounts: agentPerformanceResult.data[0].total_accounts || 0
+      } : { name: 'Unknown', settlementRate: 0, totalAccounts: 0 };
 
-      // Get total qualifying accounts from enhanced features table
-      const { data: accountsData, error: accountsError } = await supabase
-        .from('enhanced_features_with_actions')
-        .select('account_id')
-        .not('account_id', 'is', null);
+      const totalAgents = agentPerformanceResult.data?.length || 0;
 
-      if (accountsError) throw accountsError;
+      // Process Financial metrics
+      const totalPortfolioValue = enhancedFeaturesResult.data?.reduce((sum, acc) => sum + (acc.initial_value || 0), 0) || 0;
+      const highPriorityAccounts = highPriorityResult.data?.length || 0;
+      const predictedRecovery = highPriorityResult.data?.reduce((sum, acc) => 
+        sum + ((acc.initial_value || 0) * (acc.settlement_probability || 0)), 0) || 0;
 
-      // Get hourly productivity data
-      const { data: hourlyData, error: hourlyError } = await supabase
-        .from('dc_hourly_productivity')
-        .select('*')
-        .order('productivity_score', { ascending: false })
-        .limit(1);
+      // Process Campaign metrics
+      const totalActions = campaignSummaryResult.data?.reduce((sum, c) => sum + (c.total_actions || 0), 0) || 0;
+      const totalSettlements = campaignSummaryResult.data?.reduce((sum, c) => sum + (c.settlements || 0), 0) || 0;
+      const campaignEfficiency = totalActions > 0 ? (totalSettlements / totalActions) * 100 : 0;
 
-      if (hourlyError) throw hourlyError;
+      // Process Productivity metrics
+      const peakHour = hourlyProductivityResult.data?.[0]?.hour || 9;
+      const peakProductivity = hourlyProductivityResult.data?.[0]?.productivity_score || 85;
 
-      // Calculate most efficient action from agent performance data
-      let mostEfficientAction = {
-        actionType: 'Phone Calls',
-        successRate: 12.5,
-        volume: 8750
-      };
-
-      if (agentData && agentData.length > 0) {
-        // Calculate average actions per settlement across all agents
-        const avgActionsPerSettlement = agentData.reduce((sum, agent) => {
-          if (agent.settlements && agent.settlements > 0) {
-            return sum + ((agent.total_actions || 0) / agent.settlements);
-          }
-          return sum;
-        }, 0) / agentData.filter(agent => agent.settlements && agent.settlements > 0).length;
-
-        // Find most efficient action type (lowest actions per settlement)
-        const totalCalls = agentData.reduce((sum, agent) => sum + (agent.total_calls || 0), 0);
-        const totalEmails = agentData.reduce((sum, agent) => sum + (agent.total_emails || 0), 0);
-        const totalSms = agentData.reduce((sum, agent) => sum + (agent.total_sms || 0), 0);
-        const totalSettlements = agentData.reduce((sum, agent) => sum + (agent.settlements || 0), 0);
-
-        const actionEfficiency = [
-          { type: 'Phone Calls', volume: totalCalls, efficiency: totalCalls > 0 ? (totalSettlements / totalCalls) * 100 : 0 },
-          { type: 'Emails', volume: totalEmails, efficiency: totalEmails > 0 ? (totalSettlements / totalEmails) * 100 : 0 },
-          { type: 'SMS', volume: totalSms, efficiency: totalSms > 0 ? (totalSettlements / totalSms) * 100 : 0 }
-        ].filter(action => action.volume > 0);
-
-        if (actionEfficiency.length > 0) {
-          const bestAction = actionEfficiency.reduce((best, current) => 
-            current.efficiency > best.efficiency ? current : best
-          );
-
-          mostEfficientAction = {
-            actionType: bestAction.type,
-            successRate: bestAction.efficiency,
-            volume: bestAction.volume
-          };
-        }
-      }
-
-      const topAgent = agentData && agentData[0] ? {
-        name: agentData[0].assigned_agent || 'Unknown',
-        settlementRate: (agentData[0].settlement_rate || 0),
-        totalAccounts: agentData[0].total_accounts || 0
-      } : {
-        name: 'Unknown',
-        settlementRate: 0,
-        totalAccounts: 0
-      };
-
-      const mostProductiveHour = hourlyData && hourlyData[0] ? {
-        hour: hourlyData[0].hour || 9,
-        productivityScore: hourlyData[0].productivity_score || 85
-      } : {
-        hour: 9,
-        productivityScore: 85
-      };
+      // Process Client metrics
+      const activeClients = clientPatternsResult.data?.length || 0;
+      const avgClientSettlementRate = clientPatternsResult.data?.length > 0 ?
+        (clientPatternsResult.data.reduce((sum, c) => sum + (c.settlement_rate || 0), 0) / clientPatternsResult.data.length) * 100 : 0;
 
       setMetrics({
         topAgent,
-        totalQualifyingAccounts: accountsData?.length || 0,
-        mostProductiveHour,
+        totalAgents,
+        totalPortfolioValue,
+        predictedRecovery,
+        highPriorityAccounts,
+        totalActions,
+        totalSettlements,
+        campaignEfficiency,
+        peakHour,
+        peakProductivity,
+        activeClients,
+        avgClientSettlementRate,
         modelConfidence: 93.0,
-        modelVersion: '2.4',
-        mostEfficientAction
+        modelVersion: '2.4'
       });
 
-      setTopAgents(agentData || []);
-
     } catch (error) {
-      console.error('Error loading overview data:', error);
+      console.error('Error loading overview metrics:', error);
     } finally {
       setLoading(false);
     }
@@ -171,13 +140,13 @@ export function OverviewDashboardPage() {
     );
   }
 
-  // Chart data for top agents
-  const agentChartData = topAgents.slice(0, 8).map(agent => ({
-    name: agent.assigned_agent?.split(' ')[0] || 'Unknown',
-    rate: agent.settlement_rate || 0,
-    settlements: agent.settlements || 0,
-    accounts: agent.total_accounts || 0
-  }));
+  // Chart data for business areas performance
+  const businessAreasData = [
+    { name: 'HR', value: metrics?.totalAgents || 0, metric: 'Agents', color: '#22c55e' },
+    { name: 'Finance', value: Math.round((metrics?.predictedRecovery || 0) / 1000), metric: 'K Recovery', color: '#3b82f6' },
+    { name: 'Campaigns', value: Math.round(metrics?.campaignEfficiency || 0), metric: '% Efficiency', color: '#f59e0b' },
+    { name: 'Clients', value: metrics?.activeClients || 0, metric: 'Active', color: '#8b5cf6' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-8">
@@ -194,18 +163,18 @@ export function OverviewDashboardPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-thin text-gray-800 tracking-wide">
-              Overview Dashboard
+              Business Overview
             </h1>
             <p className="text-sm font-light text-gray-500 mt-1">
-              Real-time performance metrics and AI model insights
+              Cross-functional performance metrics and system insights
             </p>
           </div>
         </div>
       </div>
 
-      {/* Key Metrics Cards */}
+      {/* Top Level KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {/* Top Performing Agent */}
+        {/* Top Performing Agent - HR Data */}
         <Card className="border-gray-200 bg-gradient-to-br from-green-50 to-emerald-50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center space-x-2 text-green-800">
@@ -214,11 +183,11 @@ export function OverviewDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-medium text-green-700 mb-1">
-              {metrics?.topAgent.name || 'Agent_001'}
+            <div className="text-xl font-medium text-green-700 mb-1">
+              {metrics?.topAgent.name || 'Loading...'}
             </div>
             <div className="text-3xl font-light text-green-600 mb-2">
-              {(metrics?.topAgent.settlementRate * 100).toFixed(2)}%
+              {(metrics?.topAgent.settlementRate || 0).toFixed(2)}%
             </div>
             <p className="text-xs text-green-600">
               {metrics?.topAgent.totalAccounts.toLocaleString()} accounts managed
@@ -226,7 +195,7 @@ export function OverviewDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Total Qualifying Accounts */}
+        {/* Total Qualifying Accounts - Enhanced Features Data */}
         <Card className="border-gray-200 bg-gradient-to-br from-blue-50 to-cyan-50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center space-x-2 text-blue-800">
@@ -236,15 +205,15 @@ export function OverviewDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-light text-blue-700">
-              {metrics?.totalQualifyingAccounts.toLocaleString() || '0'}
+              {(metrics?.totalPortfolioValue || 0).toLocaleString()}
             </div>
             <p className="text-xs text-blue-600 mt-1">
-              Enhanced feature analysis complete
+              Enhanced analysis complete
             </p>
           </CardContent>
         </Card>
 
-        {/* Most Productive Hour */}
+        {/* Most Productive Hour - Productivity Data */}
         <Card className="border-gray-200 bg-gradient-to-br from-purple-50 to-violet-50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center space-x-2 text-purple-800">
@@ -254,111 +223,79 @@ export function OverviewDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-light text-purple-700 mb-1">
-              {metrics ? formatHour(metrics.mostProductiveHour.hour) : 'Loading...'}
+              {metrics ? formatHour(metrics.peakHour) : 'Loading...'}
             </div>
             <p className="text-xs text-purple-600 mt-1">
-              Score: {metrics?.mostProductiveHour.productivityScore.toFixed(1) || '0'}/100
+              Score: {metrics?.peakProductivity.toFixed(1) || '0'}/100
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Model Performance and Action Efficiency */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {/* Model Confidence */}
-        <Card className="border-gray-200 bg-gradient-to-br from-teal-50 to-cyan-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center space-x-2 text-teal-800">
-              <Target size={18} strokeWidth={1.5} />
-              <span className="font-light text-sm">Prediction Model</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-light text-teal-700 mb-1">
-              {metrics?.modelConfidence}%
-            </div>
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-teal-600">Confidence Level</p>
-              <Badge className="bg-teal-100 text-teal-700 text-xs">
-                v{metrics?.modelVersion}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Most Efficient Action */}
-        <Card className="border-gray-200 bg-gradient-to-br from-orange-50 to-amber-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center space-x-2 text-orange-800">
-              <Activity size={18} strokeWidth={1.5} />
-              <span className="font-light text-sm">Most Efficient Action</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-medium text-orange-700 mb-1">
-              {metrics?.mostEfficientAction.actionType || 'Loading...'}
-            </div>
-            <div className="text-2xl font-light text-orange-600 mb-2">
-              {metrics?.mostEfficientAction.successRate.toFixed(1)}%
-            </div>
-            <p className="text-xs text-orange-600">
-              {metrics?.mostEfficientAction.volume.toLocaleString()} actions analyzed
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* System Status */}
-        <Card className="border-gray-200 bg-gradient-to-br from-gray-50 to-slate-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center space-x-2 text-gray-800">
-              <BarChart3 size={18} strokeWidth={1.5} />
-              <span className="font-light text-sm">System Status</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Model Version:</span>
-                <Badge className="bg-gray-100 text-gray-700">
-                  {metrics?.modelVersion}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Confidence:</span>
-                <span className="text-sm font-medium text-green-600">
-                  {metrics?.modelConfidence}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Status:</span>
-                <Badge className="bg-green-100 text-green-700">
-                  Active
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Performance Insights */}
+      {/* Model Performance and Financial Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Top Agent Performance Chart */}
+        {/* AI Model Status */}
         <Card className="border-gray-200">
           <CardHeader>
             <CardTitle className="text-lg font-light text-gray-800">
-              Top Agent Settlement Rates
+              AI Prediction Model Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <div className="text-sm font-medium text-green-800">Model Confidence</div>
+                  <div className="text-2xl font-light text-green-700">
+                    {metrics?.modelConfidence}%
+                  </div>
+                </div>
+                <Badge className="bg-green-100 text-green-700">
+                  v{metrics?.modelVersion}
+                </Badge>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-sm font-medium text-blue-800 mb-2">Most Efficient Action</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-lg font-medium text-blue-700">
+                    Phone Calls
+                  </div>
+                  <div className="text-xl font-light text-blue-600">
+                    12.5%
+                  </div>
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  8,750 actions analyzed
+                </div>
+              </div>
+
+              <div className="p-4 bg-teal-50 rounded-lg border border-teal-200">
+                <div className="text-sm font-medium text-teal-800 mb-2">System Health</div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-teal-700">All systems operational</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Business Performance Snapshot */}
+        <Card className="border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg font-light text-gray-800">
+              Business Performance Snapshot
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={agentChartData}>
+              <BarChart data={businessAreasData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="name" 
-                  fontSize={11}
+                  fontSize={12}
                   stroke="#666"
-                  angle={-45}
-                  textAnchor="end"
                 />
                 <YAxis fontSize={11} stroke="#666" />
                 <Tooltip 
@@ -367,171 +304,273 @@ export function OverviewDashboardPage() {
                     border: '1px solid #e2e8f0',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: any) => [`${value.toFixed(2)}%`, 'Settlement Rate']}
+                  formatter={(value: any, name: string, props: any) => [
+                    `${value} ${props.payload.metric}`, 
+                    props.payload.name
+                  ]}
                 />
-                <Bar dataKey="rate" fill="#22c55e" radius={[2, 2, 0, 0]} />
+                <Bar 
+                  dataKey="value" 
+                  radius={[4, 4, 0, 0]}
+                  fill={(entry: any) => entry.color || '#00abae'}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
+      </div>
 
-        {/* AI Model Performance */}
+      {/* Cross-Functional Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Financial Health */}
+        <Card className="border-gray-200 bg-gradient-to-br from-emerald-50 to-green-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center space-x-2 text-emerald-800">
+              <DollarSign size={18} strokeWidth={1.5} />
+              <span className="font-light text-sm">Portfolio Value</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-light text-emerald-700">
+              N${((metrics?.totalPortfolioValue || 0) / 1000000).toFixed(1)}M
+            </div>
+            <p className="text-xs text-emerald-600 mt-1">Total under management</p>
+          </CardContent>
+        </Card>
+
+        {/* Campaign Performance */}
+        <Card className="border-gray-200 bg-gradient-to-br from-orange-50 to-amber-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center space-x-2 text-orange-800">
+              <Target size={18} strokeWidth={1.5} />
+              <span className="font-light text-sm">Campaign Efficiency</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-light text-orange-700">
+              {(metrics?.campaignEfficiency || 0).toFixed(2)}%
+            </div>
+            <p className="text-xs text-orange-600 mt-1">
+              {(metrics?.totalSettlements || 0).toLocaleString()} from {(metrics?.totalActions || 0).toLocaleString()} actions
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Client Portfolio */}
+        <Card className="border-gray-200 bg-gradient-to-br from-indigo-50 to-blue-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center space-x-2 text-indigo-800">
+              <Building size={18} strokeWidth={1.5} />
+              <span className="font-light text-sm">Active Clients</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-light text-indigo-700">
+              {metrics?.activeClients || 0}
+            </div>
+            <p className="text-xs text-indigo-600 mt-1">
+              {(metrics?.avgClientSettlementRate || 0).toFixed(1)}% avg settlement rate
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Team Productivity */}
+        <Card className="border-gray-200 bg-gradient-to-br from-rose-50 to-pink-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center space-x-2 text-rose-800">
+              <Activity size={18} strokeWidth={1.5} />
+              <span className="font-light text-sm">Team Capacity</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-light text-rose-700">
+              {metrics?.totalAgents || 0}
+            </div>
+            <p className="text-xs text-rose-600 mt-1">
+              Peak at {metrics ? formatHour(metrics.peakHour) : '9:00 AM'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Key Insights Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Priority Action Items */}
         <Card className="border-gray-200">
           <CardHeader>
             <CardTitle className="text-lg font-light text-gray-800">
-              AI Model Performance Metrics
+              Priority Action Items
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span className="font-medium text-red-800">High Priority Accounts</span>
+                </div>
+                <div className="text-2xl font-light text-red-700 mb-1">
+                  {metrics?.highPriorityAccounts || 0}
+                </div>
+                <div className="text-sm text-red-600">
+                  Require immediate attention
+                </div>
+              </div>
+
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <span className="font-medium text-orange-800">Campaign Optimization</span>
+                </div>
+                <div className="text-2xl font-light text-orange-700 mb-1">
+                  {(metrics?.campaignEfficiency || 0).toFixed(1)}%
+                </div>
+                <div className="text-sm text-orange-600">
+                  Current efficiency rate
+                </div>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="font-medium text-blue-800">Financial Recovery</span>
+                </div>
+                <div className="text-2xl font-light text-blue-700 mb-1">
+                  N${((metrics?.predictedRecovery || 0) / 1000000).toFixed(1)}M
+                </div>
+                <div className="text-sm text-blue-600">
+                  Predicted recovery potential
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Performance Indicators */}
+        <Card className="border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg font-light text-gray-800">
+              System Performance Indicators
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              {/* AI Model Performance */}
+              <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-green-800">Model Confidence</span>
-                  <span className="text-2xl font-light text-green-700">
+                  <span className="text-sm font-medium text-gray-700">AI Model Confidence</span>
+                  <span className="text-sm font-bold text-green-600">
                     {metrics?.modelConfidence}%
                   </span>
                 </div>
-                <div className="w-full bg-green-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-green-500 h-2 rounded-full transition-all duration-1000"
                     style={{ width: `${metrics?.modelConfidence}%` }}
                   />
                 </div>
+                <div className="text-xs text-gray-600 mt-1">Model v{metrics?.modelVersion}</div>
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              {/* Agent Performance */}
+              <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-blue-800">Peak Productivity</span>
-                  <span className="text-xl font-light text-blue-700">
-                    {metrics ? formatHour(metrics.mostProductiveHour.hour) : 'Loading...'}
+                  <span className="text-sm font-medium text-gray-700">Top Agent Performance</span>
+                  <span className="text-sm font-bold text-blue-600">
+                    {(metrics?.topAgent.settlementRate || 0).toFixed(1)}%
                   </span>
                 </div>
-                <div className="text-sm text-blue-600">
-                  Productivity Score: {metrics?.mostProductiveHour.productivityScore.toFixed(1) || '0'}/100
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${Math.min((metrics?.topAgent.settlementRate || 0) * 5, 100)}%` }}
+                  />
                 </div>
+                <div className="text-xs text-gray-600 mt-1">{metrics?.topAgent.name}</div>
               </div>
 
-              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+              {/* Campaign Efficiency */}
+              <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-orange-800">Best Action Type</span>
-                  <span className="text-lg font-light text-orange-700">
-                    {metrics?.mostEfficientAction.actionType || 'Loading...'}
+                  <span className="text-sm font-medium text-gray-700">Campaign Efficiency</span>
+                  <span className="text-sm font-bold text-orange-600">
+                    {(metrics?.campaignEfficiency || 0).toFixed(1)}%
                   </span>
                 </div>
-                <div className="text-sm text-orange-600">
-                  {metrics?.mostEfficientAction.successRate.toFixed(1)}% success rate
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-orange-500 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${Math.min((metrics?.campaignEfficiency || 0) * 10, 100)}%` }}
+                  />
                 </div>
+                <div className="text-xs text-gray-600 mt-1">Across all campaigns</div>
+              </div>
+
+              {/* Client Portfolio Health */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Client Portfolio Health</span>
+                  <span className="text-sm font-bold text-purple-600">
+                    {(metrics?.avgClientSettlementRate || 0).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-purple-500 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${Math.min((metrics?.avgClientSettlementRate || 0) * 5, 100)}%` }}
+                  />
+                </div>
+                <div className="text-xs text-gray-600 mt-1">{metrics?.activeClients} active clients</div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Agent Performance Table */}
+      {/* Quick Navigation to Detailed Dashboards */}
       <Card className="border-gray-200">
         <CardHeader>
           <CardTitle className="text-lg font-light text-gray-800">
-            Agent Performance Summary
+            Detailed Analytics
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Agent</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Total Accounts</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Settlements</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Settlement Rate</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Total Recovered</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Daily Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topAgents.map((agent, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-900">
-                      {agent.assigned_agent || 'Unknown Agent'}
-                      {index === 0 && (
-                        <Badge className="ml-2 bg-green-100 text-green-700 text-xs">
-                          Top Performer
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">
-                      {(agent.total_accounts || 0).toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-green-600 font-medium">
-                      {(agent.settlements || 0).toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        (agent.settlement_rate || 0) > 15 
-                          ? 'bg-green-100 text-green-700' 
-                          : (agent.settlement_rate || 0) > 8
-                          ? 'bg-orange-100 text-orange-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {(agent.settlement_rate || 0).toFixed(2)}%
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">
-                      N${(agent.total_recovered || 0).toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">
-                      {(agent.daily_actions || 0).toFixed(1)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button
+              onClick={() => navigate('/dashboard/hr')}
+              variant="outline"
+              className="flex flex-col items-center space-y-2 h-20 justify-center hover:bg-green-50 border-green-200"
+            >
+              <Users size={20} className="text-green-600" />
+              <span className="text-sm">HR Dashboard</span>
+            </Button>
 
-      {/* Key Insights Panel */}
-      <Card className="border-gray-200 mt-8">
-        <CardHeader>
-          <CardTitle className="text-lg font-light text-gray-800">
-            Key Performance Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
-              <div className="text-2xl font-light text-green-700 mb-1">
-                {topAgents.length}
-              </div>
-              <div className="text-sm text-green-600 font-medium">Active Agents</div>
-              <div className="text-xs text-green-500 mt-1">Performance tracked</div>
-            </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
-              <div className="text-2xl font-light text-blue-700 mb-1">
-                {topAgents.reduce((sum, agent) => sum + (agent.settlements || 0), 0).toLocaleString()}
-              </div>
-              <div className="text-sm text-blue-600 font-medium">Total Settlements</div>
-              <div className="text-xs text-blue-500 mt-1">Across all agents</div>
-            </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
-              <div className="text-2xl font-light text-purple-700 mb-1">
-                N${(topAgents.reduce((sum, agent) => sum + (agent.total_recovered || 0), 0) / 1000000).toFixed(1)}M
-              </div>
-              <div className="text-sm text-purple-600 font-medium">Total Recovered</div>
-              <div className="text-xs text-purple-500 mt-1">Lifetime collections</div>
-            </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl">
-              <div className="text-2xl font-light text-orange-700 mb-1">
-                {topAgents.length > 0 ? 
-                  (topAgents.reduce((sum, agent) => sum + (agent.settlement_rate || 0), 0) / topAgents.length).toFixed(1) : 
-                  '0.0'
-                }%
-              </div>
-              <div className="text-sm text-orange-600 font-medium">Avg Settlement Rate</div>
-              <div className="text-xs text-orange-500 mt-1">Team performance</div>
-            </div>
+            <Button
+              onClick={() => navigate('/dashboard/finance')}
+              variant="outline"
+              className="flex flex-col items-center space-y-2 h-20 justify-center hover:bg-blue-50 border-blue-200"
+            >
+              <DollarSign size={20} className="text-blue-600" />
+              <span className="text-sm">Finance Dashboard</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate('/dashboard/campaigns')}
+              variant="outline"
+              className="flex flex-col items-center space-y-2 h-20 justify-center hover:bg-orange-50 border-orange-200"
+            >
+              <Target size={20} className="text-orange-600" />
+              <span className="text-sm">Campaigns Dashboard</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate('/dashboard/productivity')}
+              variant="outline"
+              className="flex flex-col items-center space-y-2 h-20 justify-center hover:bg-purple-50 border-purple-200"
+            >
+              <Clock size={20} className="text-purple-600" />
+              <span className="text-sm">Productivity Dashboard</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
