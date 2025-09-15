@@ -234,7 +234,8 @@ export function FinanceDashboardPage() {
     value: acc.initial_value || 0,
     probability: (acc.settlement_probability || 0) * 100,
     predicted: acc.predicted_recovery || 0,
-    days: acc.days_since_handover || 0
+    days: acc.days_since_handover || 0,
+    roi: acc.roi_score || 0
   }));
 
   return (
@@ -375,57 +376,52 @@ export function FinanceDashboardPage() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Value vs Probability Scatter */}
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-light text-gray-800">
-              Recovery Potential Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <ScatterChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="probability" 
-                  name="Settlement Probability (%)"
-                  fontSize={11}
-                  stroke="#666"
-                />
-                <YAxis 
-                  dataKey="value" 
-                  name="Account Value"
-                  fontSize={11}
-                  stroke="#666"
-                />
-                <Tooltip 
-                  cursor={{ strokeDasharray: '3 3' }}
-                  contentStyle={{ 
-                    backgroundColor: '#fff', 
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value: any, name: string) => [
-                    name === 'probability' ? `${value}%` : `N$${value.toLocaleString()}`,
-                    name === 'probability' ? 'Settlement Probability' : 'Account Value'
-                  ]}
-                />
-                <Scatter dataKey="value" fill="#00abae" />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
         {/* Top Recovery Targets */}
         <Card className="border-gray-200">
           <CardHeader>
             <CardTitle className="text-lg font-light text-gray-800">
-              Top 10 Recovery Targets by ROI
+              Top 10 Accounts by Predicted Recovery
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData.slice(0, 10)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="account" 
+                  fontSize={11}
+                  stroke="#666"
+                  angle={-45}
+                  textAnchor="end"
+                />
+                <YAxis 
+                  fontSize={11}
+                  stroke="#666"
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px'
+                  }}
+                  formatter={(value: any) => [`N$${value.toLocaleString()}`, 'Predicted Recovery']}
+                />
+                <Bar dataKey="predicted" fill="#22c55e" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* ROI Analysis */}
+        <Card className="border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg font-light text-gray-800">
+              Best ROI Opportunities
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData.slice(0, 10).sort((a, b) => (b.roi || 0) - (a.roi || 0))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="account" 
@@ -441,9 +437,9 @@ export function FinanceDashboardPage() {
                     border: '1px solid #e2e8f0',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: any) => [`N$${value.toLocaleString()}`, 'Predicted Recovery']}
+                  formatter={(value: any) => [`${value.toFixed(2)}`, 'ROI Score']}
                 />
-                <Bar dataKey="predicted" fill="#22c55e" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="roi" fill="#3b82f6" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
