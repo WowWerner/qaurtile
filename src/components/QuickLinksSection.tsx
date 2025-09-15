@@ -381,11 +381,11 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
       {/* Floating Action Button when collapsed */}
       {!isExpanded && totalActivity > 0 && (
         <div 
-          className="absolute -top-2 -left-2 w-20 h-20 rounded-full bg-gradient-to-br from-[rgb(0,171,174)] to-[rgb(0,151,154)] shadow-xl shadow-[rgb(0,171,174)]/30 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl"
+          className="absolute -top-2 -left-2 w-16 h-16 rounded-full bg-gradient-to-br from-[rgb(0,171,174)] to-[rgb(0,151,154)] shadow-xl shadow-[rgb(0,171,174)]/30 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl"
           onClick={() => setIsExpanded(true)}
         >
           <div className="text-center">
-            <div className="text-white font-bold text-lg">{totalActivity > 99 ? '99+' : totalActivity}</div>
+            <div className="text-white font-bold text-base">{totalActivity > 99 ? '99+' : totalActivity}</div>
             <div className="text-white/80 text-xs font-light">items</div>
           </div>
         </div>
