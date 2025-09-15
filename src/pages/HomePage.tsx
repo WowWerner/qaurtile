@@ -13,43 +13,44 @@ import { Brain, TrendingUp, Users, BarChart3, Target, DollarSign, Clock, Buildin
 
 export function HomePage() {
   const navigate = useNavigate();
-  const [companyPerformanceData, setCompanyPerformanceData] = useState<any[]>([]);
+  const [clientPriorityData, setClientPriorityData] = useState<any[]>([]);
   
   // Track page views
   usePageTracking();
 
   useEffect(() => {
-    loadCompanyPerformance();
+    loadClientPriorityData();
   }, []);
 
-  const loadCompanyPerformance = async () => {
+  const loadClientPriorityData = async () => {
     try {
       const { data, error } = await supabase
-        .from('dc_analysis_metadata')
-        .select('analysis_date, total_amount_recovered')
-        .not('total_amount_recovered', 'is', null)
-        .order('analysis_date', { ascending: true })
-        .limit(30); // Last 30 data points
+        .from('client_summary_dashboard')
+        .select('client_name, high_probability')
+        .not('client_name', 'ilike', '%test%')
+        .not('high_probability', 'is', null)
+        .order('high_probability', { ascending: false })
+        .limit(15); // Top 15 clients by high priority accounts
 
       if (error) throw error;
 
       if (data && data.length > 0) {
         const formattedData = data.map(item => ({
-          date: format(new Date(item.analysis_date), 'MMM dd'),
-          value: (item.total_amount_recovered || 0) / 1000000, // Convert to millions
-          fullDate: item.analysis_date
+          client: item.client_name?.substring(0, 12) || `Client ${index + 1}`,
+          value: item.high_probability || 0,
+          fullName: item.client_name
         }));
-        setCompanyPerformanceData(formattedData);
+        setClientPriorityData(formattedData);
       }
     } catch (error) {
-      console.error('Error loading company performance:', error);
+      console.error('Error loading client priority data:', error);
       // Create sample data if real data is not available
       const sampleData = Array.from({ length: 12 }, (_, i) => ({
-        date: format(new Date(2024, i, 1), 'MMM dd'),
-        value: 15 + Math.random() * 10 + (i * 0.5),
-        fullDate: new Date(2024, i, 1).toISOString()
+        client: `Client ${i + 1}`,
+        value: Math.floor(50 + Math.random() * 200),
+        fullName: `Sample Client ${i + 1}`
       }));
-      setCompanyPerformanceData(sampleData);
+      setClientPriorityData(sampleData);
     }
   };
   const handleSignOut = async () => {
@@ -111,57 +112,6 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-8">
-      {/* Company Performance Graph */}
-      {companyPerformanceData.length > 0 && (
-        <div className="w-full h-20 mb-8 -mx-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={companyPerformanceData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-              <defs>
-                <linearGradient id="companyGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="rgb(0,171,174)" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="rgb(0,171,174)" stopOpacity={0.02}/>
-                </linearGradient>
-              </defs>
-              <XAxis 
-                dataKey="date" 
-                axisLine={false}
-                tickLine={false}
-                tick={false}
-              />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={false}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                  border: '1px solid rgba(0,171,174,0.2)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-                formatter={(value: any) => [`N$${value.toFixed(1)}M`, 'Total Recovered']}
-                labelFormatter={(label) => `Performance: ${label}`}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="rgba(0,171,174,0.3)"
-                strokeWidth={2}
-                fill="url(#companyGradient)"
-                dot={false}
-                activeDot={{ 
-                  r: 4, 
-                  fill: 'rgb(0,171,174)', 
-                  stroke: 'white', 
-                  strokeWidth: 2 
-                }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex justify-between items-start mb-16">
         <div className="flex flex-col">
@@ -190,6 +140,57 @@ export function HomePage() {
           Which intelligence do you want to work with?
         </h2>
       </div>
+      
+      {/* High Priority Accounts by Client Graph */}
+      {clientPriorityData.length > 0 && (
+        <div className="w-full h-20 mb-12 -mx-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={clientPriorityData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <defs>
+                <linearGradient id="clientPriorityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="rgb(0,171,174)" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="rgb(0,171,174)" stopOpacity={0.02}/>
+                </linearGradient>
+              </defs>
+              <XAxis 
+                dataKey="client" 
+                axisLine={false}
+                tickLine={false}
+                tick={false}
+              />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={false}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                  border: '1px solid rgba(0,171,174,0.2)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
+                formatter={(value: any) => [`${value} accounts`, 'High Priority']}
+                labelFormatter={(label) => `Client: ${label}`}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="rgba(0,171,174,0.3)"
+                strokeWidth={2}
+                fill="url(#clientPriorityGradient)"
+                dot={false}
+                activeDot={{ 
+                  r: 4, 
+                  fill: 'rgb(0,171,174)', 
+                  stroke: 'white', 
+                  strokeWidth: 2 
+                }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {cards.map((card) => (
