@@ -354,8 +354,8 @@ export function FinanceDashboardPage() {
           <SelectContent>
             <SelectItem value="all">All Accounts</SelectItem>
             <SelectItem value="premium-targets">Premium Targets</SelectItem>
-            <SelectItem value="high-value">High Value (>N$25k)</SelectItem>
-            <SelectItem value="high-probability">High Probability (>60%)</SelectItem>
+            <SelectItem value="high-value">High Value (&gt;N$25k)</SelectItem>
+            <SelectItem value="high-probability">High Probability (&gt;60%)</SelectItem>
             <SelectItem value="time-sensitive">Time Sensitive</SelectItem>
           </SelectContent>
         </Select>
