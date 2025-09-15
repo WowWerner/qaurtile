@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Pin, PinOff, Plus, X, Building, Brain, Users, BarChart3, UserCheck, DollarSign, Target, Activity, Trash2 } from 'lucide-react';
+import { Clock, Pin, PinOff, Plus, X, Building, Brain, Users, BarChart3, UserCheck, DollarSign, Target, Activity, Trash2, ChevronUp, ChevronDown, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { UserInteractionsService } from '../utils/userInteractions';
+import { cn } from '../lib/utils';
 
 const iconMap = {
   Building,
@@ -28,6 +29,8 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
   const [recentItems, setRecentItems] = useState<any[]>([]);
   const [pinnedItems, setPinnedItems] = useState<any[]>([]);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'recent' | 'pinned' | 'quick'>('recent');
 
   useEffect(() => {
     loadUserData();
@@ -99,176 +102,233 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
 
   const quickActions = UserInteractionsService.getQuickActions();
 
-  return (
-    <div className={`space-y-8 ${className}`}>
-      {/* Pinned Items */}
-      {pinnedItems.length > 0 && (
-        <Card className="border-gray-200 bg-gradient-to-r from-blue-50 to-cyan-50">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Pin size={18} strokeWidth={1.5} className="text-blue-600" />
-                <span className="text-lg font-light text-blue-800">Quick Links</span>
-              </div>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                {pinnedItems.length} pinned
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {pinnedItems.map((item) => {
-                const IconComponent = getIconComponent(item.icon);
-                return (
-                  <div
-                    key={item.id}
-                    className="group relative bg-white p-4 rounded-xl border border-blue-200 hover:border-blue-300 cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <IconComponent 
-                        size={20} 
-                        strokeWidth={1.5} 
-                        className="text-blue-600 mb-2 group-hover:text-blue-700 transition-colors" 
-                      />
-                      <span className="text-sm font-medium text-gray-800 group-hover:text-gray-900 transition-colors leading-tight">
-                        {item.title}
-                      </span>
-                      <span className="text-xs text-blue-600 mt-1">
-                        {item.category}
-                      </span>
-                    </div>
-                    
-                    {/* Unpin button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUnpinItem(item.id);
-                      }}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
-                    >
-                      <X size={12} strokeWidth={2} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+  // Calculate total activity count
+  const totalActivity = recentItems.length + pinnedItems.length;
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recently Viewed */}
-        <Card className="border-gray-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Clock size={18} strokeWidth={1.5} className="text-gray-600" />
-                <span className="text-lg font-light text-gray-800">Recently Viewed</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                {recentItems.length > 0 && (
-                  <Button
-                    onClick={handleClearRecent}
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <Trash2 size={14} strokeWidth={1.5} />
-                  </Button>
-                )}
-                <Badge variant="secondary" className="bg-gray-100 text-gray-700">
-                  {recentItems.length}
-                </Badge>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentItems.length > 0 ? (
-              <div className="space-y-3">
-                {recentItems.map((item) => {
-                  const IconComponent = getIconComponent(item.icon);
-                  const isPinned = UserInteractionsService.isItemPinned(item.id);
-                  
-                  return (
-                    <div
-                      key={item.id}
-                      className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200"
-                      onClick={() => handleItemClick(item)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <IconComponent 
-                          size={16} 
-                          strokeWidth={1.5} 
-                          className="text-gray-600 group-hover:text-gray-800 transition-colors" 
-                        />
-                        <div>
-                          <div className="font-medium text-gray-800 group-hover:text-gray-900 transition-colors">
-                            {item.title}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {formatTimestamp(item.timestamp)}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isPinned) {
-                            handleUnpinItem(item.id);
-                          } else {
-                            handlePinItem(item);
-                          }
-                        }}
-                        className={`p-1.5 rounded-md transition-all duration-200 ${
-                          isPinned
-                            ? 'text-blue-600 hover:bg-blue-100'
-                            : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100'
-                        }`}
-                      >
-                        {isPinned ? (
-                          <PinOff size={14} strokeWidth={1.5} />
-                        ) : (
-                          <Pin size={14} strokeWidth={1.5} />
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Clock size={32} className="text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-light">No recent activity</p>
-                <p className="text-xs text-gray-400 mt-1">Your recently visited pages will appear here</p>
+  return (
+    <div className={cn("fixed bottom-8 right-8 z-40", className)}>
+      {/* Sleek Tab Container */}
+      <div className={cn(
+        "bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-2xl shadow-gray-900/20 transition-all duration-500 ease-out",
+        isExpanded ? "w-96 h-96" : "w-16 h-16"
+      )}>
+        
+        {/* Toggle Button */}
+        <div 
+          className="absolute top-0 left-0 w-16 h-16 flex items-center justify-center cursor-pointer group rounded-2xl transition-all duration-300 hover:bg-gray-50"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="relative">
+            <Zap 
+              size={20} 
+              strokeWidth={1.5} 
+              className={cn(
+                "text-[rgb(0,171,174)] transition-all duration-300",
+                isExpanded ? "rotate-180" : "rotate-0 group-hover:scale-110"
+              )} 
+            />
+            {totalActivity > 0 && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-[rgb(0,171,174)] rounded-full flex items-center justify-center">
+                <span className="text-[8px] font-bold text-white">{totalActivity > 9 ? '9+' : totalActivity}</span>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Quick Actions */}
-        <Card className="border-gray-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Target size={18} strokeWidth={1.5} className="text-gray-600" />
-                <span className="text-lg font-light text-gray-800">Quick Actions</span>
-              </div>
-              <Button
-                onClick={() => setShowQuickActions(!showQuickActions)}
-                variant="ghost"
-                size="sm"
-                className="text-gray-500 hover:text-gray-700"
+        {/* Expanded Content */}
+        <div className={cn(
+          "transition-all duration-500 ease-out overflow-hidden",
+          isExpanded ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}>
+          {/* Tab Header */}
+          <div className="pt-20 px-6 pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-light text-gray-800">Quick Access</h3>
+              <button
+                onClick={() => setIsExpanded(false)}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
-                <Plus size={14} strokeWidth={1.5} />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {showQuickActions ? (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600 mb-3">Pin frequently used features:</div>
+                <X size={14} strokeWidth={1.5} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Tab Navigation */}
+            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('recent')}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                  activeTab === 'recent'
+                    ? "bg-white text-[rgb(0,171,174)] shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                )}
+              >
+                Recent
+                {recentItems.length > 0 && (
+                  <span className="ml-1 text-xs">{recentItems.length}</span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('pinned')}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                  activeTab === 'pinned'
+                    ? "bg-white text-[rgb(0,171,174)] shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                )}
+              >
+                Pinned
+                {pinnedItems.length > 0 && (
+                  <span className="ml-1 text-xs">{pinnedItems.length}</span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('quick')}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                  activeTab === 'quick'
+                    ? "bg-white text-[rgb(0,171,174)] shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                )}
+              >
+                Quick
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="px-6 pb-6 h-64 overflow-y-auto">
+            {/* Recent Items Tab */}
+            {activeTab === 'recent' && (
+              <div className="space-y-2">
+                {recentItems.length > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-gray-700">Recently Viewed</span>
+                      <Button
+                        onClick={handleClearRecent}
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      >
+                        <Trash2 size={12} strokeWidth={1.5} />
+                      </Button>
+                    </div>
+                    {recentItems.slice(0, 8).map((item) => {
+                      const IconComponent = getIconComponent(item.icon);
+                      const isPinned = UserInteractionsService.isItemPinned(item.id);
+                      
+                      return (
+                        <div
+                          key={item.id}
+                          className="group flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200"
+                          onClick={() => handleItemClick(item)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <IconComponent 
+                              size={14} 
+                              strokeWidth={1.5} 
+                              className="text-gray-600 group-hover:text-gray-800 transition-colors" 
+                            />
+                            <div>
+                              <div className="font-medium text-gray-800 text-sm">
+                                {item.title}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {formatTimestamp(item.timestamp)}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isPinned) {
+                                handleUnpinItem(item.id);
+                              } else {
+                                handlePinItem(item);
+                              }
+                            }}
+                            className={cn(
+                              "p-1 rounded-md transition-all duration-200",
+                              isPinned
+                                ? "text-[rgb(0,171,174)] hover:bg-gray-200"
+                                : "text-gray-400 hover:text-[rgb(0,171,174)] hover:bg-gray-200 opacity-0 group-hover:opacity-100"
+                            )}
+                          >
+                            {isPinned ? (
+                              <PinOff size={12} strokeWidth={1.5} />
+                            ) : (
+                              <Pin size={12} strokeWidth={1.5} />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <Clock size={24} className="text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No recent activity</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pinned Items Tab */}
+            {activeTab === 'pinned' && (
+              <div className="space-y-2">
+                {pinnedItems.length > 0 ? (
+                  <>
+                    <div className="text-sm font-medium text-gray-700 mb-3">Pinned Items</div>
+                    {pinnedItems.map((item) => {
+                      const IconComponent = getIconComponent(item.icon);
+                      return (
+                        <div
+                          key={item.id}
+                          className="group relative flex items-center space-x-2 p-2 bg-blue-50 rounded-lg hover:bg-blue-100 cursor-pointer transition-all duration-200"
+                          onClick={() => handleItemClick(item)}
+                        >
+                          <IconComponent 
+                            size={14} 
+                            strokeWidth={1.5} 
+                            className="text-[rgb(0,171,174)] flex-shrink-0" 
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-800 text-sm truncate">
+                              {item.title}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {item.category}
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnpinItem(item.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-red-500 hover:bg-red-100 transition-all duration-200"
+                          >
+                            <X size={10} strokeWidth={2} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <Pin size={24} className="text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No pinned items</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quick Actions Tab */}
+            {activeTab === 'quick' && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-700 mb-3">Quick Actions</div>
                 {quickActions
                   .filter(action => !UserInteractionsService.isItemPinned(action.id))
                   .map((action) => {
@@ -276,150 +336,59 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
                     return (
                       <div
                         key={action.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                        className="group flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-[rgb(0,171,174)]/5 cursor-pointer transition-all duration-200"
+                        onClick={() => handleItemClick(action)}
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
                           <IconComponent 
-                            size={16} 
+                            size={14} 
                             strokeWidth={1.5} 
-                            className="text-gray-600" 
+                            className="text-gray-600 group-hover:text-[rgb(0,171,174)] transition-colors" 
                           />
                           <div>
-                            <div className="font-medium text-gray-800">{action.title}</div>
+                            <div className="font-medium text-gray-800 text-sm group-hover:text-[rgb(0,171,174)] transition-colors">
+                              {action.title}
+                            </div>
                             <div className="text-xs text-gray-500">{action.category}</div>
                           </div>
                         </div>
                         
-                        <Button
-                          onClick={() => {
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handlePinItem(action);
-                            setShowQuickActions(false);
                           }}
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                          className="p-1 rounded-md text-gray-400 hover:text-[rgb(0,171,174)] hover:bg-[rgb(0,171,174)]/10 opacity-0 group-hover:opacity-100 transition-all duration-200"
                         >
-                          <Pin size={14} strokeWidth={1.5} />
-                        </Button>
+                          <Pin size={12} strokeWidth={1.5} />
+                        </button>
                       </div>
                     );
                   })}
-                {quickActions.filter(action => !UserInteractionsService.isItemPinned(action.id)).length === 0 && (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-500">All quick actions are already pinned</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600 mb-3">Suggested actions based on your usage:</div>
                 
-                {/* Smart suggestions based on recent activity */}
-                {recentItems.length > 0 ? (
-                  <div className="space-y-2">
-                    {quickActions
-                      .filter(action => !UserInteractionsService.isItemPinned(action.id))
-                      .slice(0, 3)
-                      .map((action) => {
-                        const IconComponent = getIconComponent(action.icon);
-                        return (
-                          <div
-                            key={action.id}
-                            className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50 cursor-pointer transition-all duration-200"
-                            onClick={() => handleItemClick(action)}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <IconComponent 
-                                size={16} 
-                                strokeWidth={1.5} 
-                                className="text-gray-600 group-hover:text-blue-600 transition-colors" 
-                              />
-                              <div>
-                                <div className="font-medium text-gray-800 group-hover:text-blue-800 transition-colors">
-                                  {action.title}
-                                </div>
-                                <div className="text-xs text-gray-500">{action.category}</div>
-                              </div>
-                            </div>
-                            
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePinItem(action);
-                              }}
-                              className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-100 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                            >
-                              <Pin size={14} strokeWidth={1.5} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <Target size={32} className="text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 font-light mb-2">Pin your favorite features</p>
-                    <Button
-                      onClick={() => setShowQuickActions(true)}
-                      variant="outline"
-                      size="sm"
-                      className="text-gray-600 hover:text-blue-600 border-gray-300"
-                    >
-                      <Plus size={14} className="mr-2" />
-                      Add Quick Actions
-                    </Button>
+                {quickActions.filter(action => !UserInteractionsService.isItemPinned(action.id)).length === 0 && (
+                  <div className="text-center py-8">
+                    <Target size={24} className="text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">All actions pinned</p>
                   </div>
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Usage Analytics */}
-      {(recentItems.length > 0 || pinnedItems.length > 0) && (
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-light text-gray-800 flex items-center space-x-2">
-              <Activity size={18} strokeWidth={1.5} />
-              <span>Usage Insights</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                <div className="text-2xl font-light text-blue-700">
-                  {new Set(recentItems.map(item => item.category)).size}
-                </div>
-                <div className="text-sm text-blue-600">Categories Used</div>
-              </div>
-              
-              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                <div className="text-2xl font-light text-green-700">
-                  {pinnedItems.length}
-                </div>
-                <div className="text-sm text-green-600">Pinned Items</div>
-              </div>
-              
-              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                <div className="text-2xl font-light text-purple-700">
-                  {recentItems.length}
-                </div>
-                <div className="text-sm text-purple-600">Recent Views</div>
-              </div>
-              
-              <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
-                <div className="text-2xl font-light text-orange-700">
-                  {recentItems.filter(item => {
-                    const hoursSince = (Date.now() - item.timestamp) / (1000 * 60 * 60);
-                    return hoursSince <= 24;
-                  }).length}
-                </div>
-                <div className="text-sm text-orange-600">Today's Activity</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Floating Action Button when collapsed */}
+      {!isExpanded && totalActivity > 0 && (
+        <div 
+          className="absolute -top-2 -left-2 w-20 h-20 rounded-full bg-gradient-to-br from-[rgb(0,171,174)] to-[rgb(0,151,154)] shadow-xl shadow-[rgb(0,171,174)]/30 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl"
+          onClick={() => setIsExpanded(true)}
+        >
+          <div className="text-center">
+            <div className="text-white font-bold text-lg">{totalActivity > 99 ? '99+' : totalActivity}</div>
+            <div className="text-white/80 text-xs font-light">items</div>
+          </div>
+        </div>
       )}
     </div>
   );
