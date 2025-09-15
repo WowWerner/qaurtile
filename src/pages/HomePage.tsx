@@ -39,6 +39,7 @@ export function HomePage() {
           highPriority: client.high_probability || 0,
           mediumPriority: client.medium_probability || 0,
           totalDebtValue: (client.total_debt_value || 0) / 1000000, // Convert to millions
+          totalAccounts: client.total_accounts || 0,
           fullName: client.client_name
         }));
         
@@ -52,6 +53,7 @@ export function HomePage() {
         highPriority: Math.floor(25 + Math.random() * 120),
         mediumPriority: Math.floor(80 + Math.random() * 200),
         totalDebtValue: Math.floor(8 + Math.random() * 40),
+        totalAccounts: Math.floor(50 + Math.random() * 300),
         fullName: `Sample Client ${String.fromCharCode(65 + i)}`
       }));
       setCompanyTrendData(sampleData);
@@ -163,6 +165,10 @@ export function HomePage() {
                   <stop offset="5%" stopColor="rgb(139,92,246)" stopOpacity={0.06}/>
                   <stop offset="95%" stopColor="rgb(139,92,246)" stopOpacity={0.01}/>
                 </linearGradient>
+                <linearGradient id="totalAccountsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="rgb(59,130,246)" stopOpacity={0.05}/>
+                  <stop offset="95%" stopColor="rgb(59,130,246)" stopOpacity={0.008}/>
+                </linearGradient>
               </defs>
               <XAxis 
                 dataKey="client" 
@@ -191,10 +197,12 @@ export function HomePage() {
                 formatter={(value: any, name: string) => [
                   name === 'highPriority' ? `${value} accounts` :
                   name === 'mediumPriority' ? `${value} accounts` :
-                  `N$${value}M`,
+                  name === 'totalDebtValue' ? `N$${value}M` :
+                  `${value} accounts`,
                   name === 'highPriority' ? 'High Priority' : 
                   name === 'mediumPriority' ? 'Medium Priority' : 'Portfolio Value'
-                ]}
+                  name === 'totalDebtValue' ? 'Portfolio Value' :
+                  'Total Accounts'
                 labelFormatter={(label) => {
                   const client = companyTrendData.find(c => c.client === label);
                   return `${client?.fullName || label}`;
@@ -263,6 +271,24 @@ export function HomePage() {
                   stroke: 'white', 
                   strokeWidth: 2,
                   filter: 'drop-shadow(0 2px 4px rgba(139,92,246,0.3))'
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="totalAccounts"
+                stroke="rgba(59,130,246,0.4)"
+                strokeWidth={1.5}
+                fill="url(#totalAccountsGradient)"
+                dot={false}
+                isAnimationActive={true}
+                animationBegin={1800}
+                animationDuration={2500}
+                activeDot={{ 
+                  r: 3, 
+                  fill: 'rgb(59,130,246)', 
+                  stroke: 'white', 
+                  strokeWidth: 2,
+                  filter: 'drop-shadow(0 2px 4px rgba(59,130,246,0.3))'
                 }}
               />
             </AreaChart>
