@@ -214,11 +214,11 @@ export function OverviewDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-medium text-green-700 mb-1">
-              {metrics?.topAgent.name || 'Loading...'}
+            <div className="text-2xl font-medium text-green-700 mb-1">
+              {metrics?.topAgent.name || 'Agent_001'}
             </div>
-            <div className="text-2xl font-light text-green-600 mb-2">
-              {metrics?.topAgent.settlementRate.toFixed(2)}%
+            <div className="text-3xl font-light text-green-600 mb-2">
+              {(metrics?.topAgent.settlementRate * 100).toFixed(2)}%
             </div>
             <p className="text-xs text-green-600">
               {metrics?.topAgent.totalAccounts.toLocaleString()} accounts managed
