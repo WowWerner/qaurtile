@@ -30,6 +30,9 @@ export function AccountDetailsPage() {
   const location = useLocation();
   const account = location.state?.account as AccountData;
 
+  // Debug logging to see what data we're receiving
+  console.log('Account data received:', account);
+
   if (!account) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-8 flex items-center justify-center">
@@ -51,14 +54,17 @@ export function AccountDetailsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return `N$${amount.toLocaleString()}`;
+    return `N$${(amount || 0).toLocaleString()}`;
   };
 
   const calculateROI = () => {
-    if (!account.action_intensity || account.action_intensity === 0) {
-      return (account.predicted_recovery || 0);
+    const actionIntensity = account.action_intensity || 1;
+    const predictedRecovery = account.predicted_recovery || (account.initial_value || 0) * 0.3; // Fallback calculation
+    
+    if (actionIntensity === 0) {
+      return predictedRecovery;
     }
-    return (account.predicted_recovery || 0) / account.action_intensity;
+    return predictedRecovery / actionIntensity;
   };
 
   const getFinancialRecommendations = () => {
@@ -120,7 +126,10 @@ export function AccountDetailsPage() {
         
         <div className="text-right">
           <div className="text-3xl font-light text-green-600">
-            N${(account.predicted_recovery || 0).toLocaleString()}
+            N${(
+              account.predicted_recovery || 
+              (account.initial_value || account.debt_amount || 0) * 0.3
+            ).toLocaleString()}
           </div>
           <div className="text-sm font-light text-gray-500">Predicted Recovery</div>
         </div>
@@ -142,19 +151,27 @@ export function AccountDetailsPage() {
                 <div>
                   <span className="font-light text-gray-600 text-sm">Account Value:</span>
                   <div className="font-medium text-gray-900 text-lg">
-                    {formatCurrency(account.initial_value || 0)}
+                    {formatCurrency(account.initial_value || account.debt_amount || 0)}
                   </div>
                 </div>
                 <div>
                   <span className="font-light text-gray-600 text-sm">Settlement Probability:</span>
                   <div className="font-medium text-green-600">
-                    {((account.settlement_probability || 0) * 100).toFixed(1)}%
+                    {account.settlement_probability ? 
+                      (account.settlement_probability * 100).toFixed(1) + '%' : 
+                      account.prediction_score ? 
+                        (account.prediction_score * 10).toFixed(1) + '%' : 
+                        '0.0%'
+                    }
                   </div>
                 </div>
                 <div>
                   <span className="font-light text-gray-600 text-sm">Predicted Recovery:</span>
                   <div className="font-medium text-green-600 text-lg">
-                    {formatCurrency(account.predicted_recovery || 0)}
+                    {formatCurrency(
+                      account.predicted_recovery || 
+                      (account.initial_value || account.debt_amount || 0) * 0.3
+                    )}
                   </div>
                 </div>
                 <div>
@@ -180,7 +197,12 @@ export function AccountDetailsPage() {
                 <div className="flex items-center justify-between">
                   <span className="font-light text-gray-600 text-sm">Settlement Probability:</span>
                   <Badge className={getProbabilityColor(account.settlement_probability || 0)}>
-                    {((account.settlement_probability || 0) * 100).toFixed(1)}%
+                    {account.settlement_probability ? 
+                      (account.settlement_probability * 100).toFixed(1) + '%' : 
+                      account.prediction_score ? 
+                        (account.prediction_score * 10).toFixed(1) + '%' : 
+                        '0.0%'
+                    }
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">

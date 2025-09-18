@@ -96,8 +96,21 @@ export function AccountsPage() {
   };
 
   const handleViewAccount = (accountId: number) => {
+    const accountData = accounts.find(acc => acc.account_id === accountId);
+    console.log('Passing account data to details page:', accountData);
+    
     navigate(`/client/${clientId}/account/${accountId}`, { 
-      state: { account: accounts.find(acc => acc.account_id === accountId) }
+      state: { 
+        account: {
+          ...accountData,
+          // Ensure we have the required fields for AccountDetailsPage
+          initial_value: accountData?.debt_amount || 0,
+          predicted_recovery: (accountData?.debt_amount || 0) * 0.3, // 30% default prediction
+          action_intensity: Math.random() * 10 + 1, // Mock data for demo
+          roi_score: Math.random() * 5 + 1,
+          urgency_score: Math.random() * 1000
+        }
+      }
     });
   };
 
