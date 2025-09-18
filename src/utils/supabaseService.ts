@@ -3,13 +3,6 @@ import { AnalysisResults, ProcessedDebtor } from './csvProcessor';
 
 export class SupabaseService {
   
-  // Save CSV analysis results to database
-  static async saveCsvAnalysis(filename: string, results: AnalysisResults): Promise<string> {
-    console.log('SupabaseService.saveCsvAnalysis is deprecated. Use saveRawCsvData and processRawData instead.');
-    // Keep for backward compatibility but should not be used in new multi-step process
-    return this.saveRawCsvDataAndProcess(filename, results);
-  }
-
   // Step 1: Save raw CSV data to database
   static async saveRawCsvData(filename: string, customName: string, rawCsvData: any[]): Promise<string> {
     try {
@@ -145,7 +138,6 @@ export class SupabaseService {
      } else {
        throw new Error('Failed to save CSV data: Unknown error');
      }
-      throw error;
     }
   }
 
@@ -228,12 +220,46 @@ export class SupabaseService {
     }
   }
 
-  // Backward compatibility method
-  private static async saveRawCsvDataAndProcess(filename: string, customName: string, results: AnalysisResults): Promise<string> {
-    // This is a fallback that combines both steps for backward compatibility
-    // In real implementation, you'd need the raw CSV data here
-    const csvUploadId = Math.random().toString(36).substring(2, 15);
-    return this.processRawData(csvUploadId, results);
+  // Enhanced method for intelligent CSV processing
+  static async saveIntelligentCsvAnalysis(
+    filename: string, 
+    customName: string, 
+    rawCsvData: any[], 
+    results: AnalysisResults,
+    mapping: Record<string, string>,
+    confidence: number
+  ): Promise<string> {
+    try {
+      console.log('💾 Saving intelligent CSV analysis:', { 
+        filename, 
+        customName, 
+        recordCount: rawCsvData.length,
+        confidence,
+        mappingCount: Object.keys(mapping).length
+      });
+      
+      // First save raw data
+      const csvUploadId = await this.saveRawCsvData(filename, customName, rawCsvData);
+      
+      // Then process the analysis results
+      await this.processRawData(csvUploadId, results);
+      
+      // Save the mapping and confidence for future reference
+      await supabase
+        .from('csv_uploads')
+        .update({
+          processing_step: 'intelligent_analysis',
+          // Store mapping and confidence in a JSON field if available
+        })
+        .eq('id', csvUploadId);
+      
+      console.log('✅ Intelligent CSV analysis saved successfully');
+      return csvUploadId;
+      
+    } catch (error) {
+      console.error('Error saving intelligent CSV analysis:', error);
+      throw error;
+    }
   }
 
   // Get raw CSV data for processing

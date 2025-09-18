@@ -1,3 +1,6 @@
+import { IntelligentCsvAnalyzer } from './intelligentCsvAnalyzer';
+import { AdaptiveScoring } from './adaptiveScoring';
+
 interface DebtorRecord {
   // Basic Info
   debtorId: string;
@@ -286,17 +289,50 @@ function calculateDebtorScore(record: DebtorRecord): ProcessedDebtor['scoring'] 
   };
 }
 
-// Parse CSV and process debtors
-export async function processCsvFile(file: File): Promise<AnalysisResults> {
+// Enhanced CSV processing with intelligent analysis
+export async function processIntelligentCsv(
+  file: File, 
+  customMapping?: Record<string, string>
+): Promise<{
+  rawData: any[];
+  analysisResults: AnalysisResults;
+  mapping: Record<string, string>;
+  confidence: number;
+}> {
   return new Promise((resolve, reject) => {
+    console.log('🚀 Starting intelligent CSV processing for:', file.name);
     const reader = new FileReader();
     
     reader.onload = (e) => {
       try {
-        const { rawData, analysisResults } = parseAndProcessCsv(e.target?.result as string);
-        resolve(analysisResults);
+        const csvContent = e.target?.result as string;
+        
+        // Use intelligent analysis if no custom mapping provided
+        let mapping = customMapping;
+        let confidence = 100;
+        
+        if (!customMapping) {
+          console.log('🧠 No custom mapping - using intelligent analysis...');
+          const analysis = IntelligentCsvAnalyzer.analyzeCsvStructure(csvContent);
+          mapping = analysis.suggestedMappings;
+          confidence = analysis.confidence;
+          
+          console.log('📊 Intelligent analysis complete:', {
+            confidence,
+            mappingsFound: Object.keys(mapping).length
+          });
+        }
+        
+        const { rawData, analysisResults } = this.parseWithMapping(csvContent, mapping || {});
+        
+        resolve({
+          rawData,
+          analysisResults,
+          mapping: mapping || {},
+          confidence
+        });
       } catch (error) {
-        console.error('CSV processing error:', error);
+        console.error('Intelligent CSV processing error:', error);
         reject(new Error('Failed to process CSV file: ' + (error as Error).message));
       }
     };
@@ -310,6 +346,213 @@ export async function processCsvFile(file: File): Promise<AnalysisResults> {
   });
 }
 
+// Parse CSV with intelligent mapping
+export function parseWithMapping(
+  csvContent: string, 
+  mapping: Record<string, string>
+): { rawData: any[]; analysisResults: AnalysisResults } {
+  console.log('🔄 Processing CSV with intelligent mapping...');
+  
+  const lines = csvContent.split('\n').filter(line => line.trim().length > 0);
+  
+  if (lines.length < 2) {
+    throw new Error('CSV file must contain at least a header row and one data row');
+  }
+  
+  const headers = IntelligentCsvAnalyzer.parseCSVLine(lines[0]);
+  console.log('📋 Headers:', headers);
+  console.log('🗺️ Using mapping:', mapping);
+  
+  const rawData: any[] = [];
+  const processedDebtors: ProcessedDebtor[] = [];
+  
+  // Process each row
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    const values = IntelligentCsvAnalyzer.parseCSVLine(line);
+    const rawRecord: Record<string, string> = {};
+    const mappedRecord: Record<string, string> = {};
+    
+    // Create both raw and mapped records
+    headers.forEach((header, index) => {
+      const value = values[index] || '';
+      rawRecord[header] = value;
+      
+      if (mapping[header]) {
+        mappedRecord[mapping[header]] = value;
+      }
+    });
+    
+    rawData.push(rawRecord);
+    
+    console.log(`🏗️ Processing debtor ${i}:`, {
+      name: `${mappedRecord.debtorFirstname || 'Unknown'} ${mappedRecord.debtorSurname || 'Unknown'}`,
+      amount: mappedRecord.amount,
+      hasPhone: !!mappedRecord.cellPhone1,
+      hasEmail: !!mappedRecord.email1
+    });
+    
+    // Calculate adaptive score
+    try {
+      const scoringResult = AdaptiveScoring.calculateAdaptiveScore(
+        rawRecord,
+        mapping,
+        85 // Default data quality if not calculated
+      );
+      
+      // Create processed debtor with enhanced data
+      const processedDebtor: ProcessedDebtor = {
+        id: i,
+        name: `${mappedRecord.debtorFirstname || 'Unknown'} ${mappedRecord.debtorSurname || 'Unknown'}`,
+        score: scoringResult.totalScore,
+        amount: this.formatAmount(mappedRecord.amount),
+        lastPayment: mappedRecord.lastPaymentDate || 'No payment',
+        phone: mappedRecord.cellPhone1 || mappedRecord.homePhone1 || 'No phone',
+        email: mappedRecord.email1 || 'No email',
+        address: mappedRecord.streetAddressLine1 || mappedRecord.postalAddressLine1 || 'No address',
+        postalCode: mappedRecord.postalCode || mappedRecord.streetPostalCode || 'N/A',
+        occupation: mappedRecord.occupation || 'Unknown',
+        scoring: {
+          contactInfo: scoringResult.breakdown.contactInfo,
+          paymentBehaviour: scoringResult.breakdown.paymentBehaviour,
+          debtCharacteristics: scoringResult.breakdown.debtCharacteristics,
+          socioEconomic: scoringResult.breakdown.socioEconomic,
+          legalStatus: scoringResult.breakdown.legalStatus
+        }
+      };
+      
+      processedDebtors.push(processedDebtor);
+      
+    } catch (scoringError) {
+      console.warn(`⚠️ Scoring failed for debtor ${i}:`, scoringError);
+      
+      // Fallback to legacy scoring
+      const legacyRecord: DebtorRecord = this.convertToLegacyRecord(mappedRecord, i);
+      const legacyScoring = calculateDebtorScore(legacyRecord);
+      
+      const processedDebtor: ProcessedDebtor = {
+        id: i,
+        name: `${mappedRecord.debtorFirstname || 'Unknown'} ${mappedRecord.debtorSurname || 'Unknown'}`,
+        score: legacyScoring.totalScore,
+        amount: this.formatAmount(mappedRecord.amount),
+        lastPayment: mappedRecord.lastPaymentDate || 'No payment',
+        phone: mappedRecord.cellPhone1 || mappedRecord.homePhone1 || 'No phone',
+        email: mappedRecord.email1 || 'No email',
+        address: mappedRecord.streetAddressLine1 || mappedRecord.postalAddressLine1 || 'No address',
+        postalCode: mappedRecord.postalCode || mappedRecord.streetPostalCode || 'N/A',
+        occupation: mappedRecord.occupation || 'Unknown',
+        scoring: {
+          contactInfo: legacyScoring.contactInfo,
+          paymentBehaviour: legacyScoring.paymentBehaviour,
+          debtCharacteristics: legacyScoring.debtCharacteristics,
+          socioEconomic: legacyScoring.socioEconomic,
+          legalStatus: legacyScoring.legalStatus
+        }
+      };
+      
+      processedDebtors.push(processedDebtor);
+    }
+  }
+  
+  console.log('📊 Processed debtors:', processedDebtors.length);
+  
+  if (processedDebtors.length === 0) {
+    throw new Error('No valid debtor records could be processed from the CSV file');
+  }
+  
+  // Categorize debtors
+  const highProbability = processedDebtors.filter(d => d.score >= 70);
+  const mediumProbability = processedDebtors.filter(d => d.score >= 40 && d.score < 70);
+  const lowProbability = processedDebtors.filter(d => d.score < 40);
+  
+  console.log('📈 Categorization complete:', {
+    high: highProbability.length,
+    medium: mediumProbability.length,
+    low: lowProbability.length
+  });
+  
+  // Calculate category statistics
+  const calculateCategoryStats = (debtors: ProcessedDebtor[]) => {
+    const totalValue = debtors.reduce((sum, d) => sum + this.parseAmount(d.amount), 0);
+    const avgScore = debtors.length > 0 ? Math.round(debtors.reduce((sum, d) => sum + d.score, 0) / debtors.length) : 0;
+    return {
+      count: debtors.length,
+      totalValue: `N$ ${totalValue.toLocaleString()}`,
+      avgScore,
+      debtors
+    };
+  };
+  
+  const analysisResults: AnalysisResults = {
+    highProbability: calculateCategoryStats(highProbability),
+    mediumProbability: calculateCategoryStats(mediumProbability),
+    lowProbability: calculateCategoryStats(lowProbability)
+  };
+  
+  return { rawData, analysisResults };
+}
+
+// Helper methods for the new system
+export class CsvProcessorHelpers {
+  static parseCSVLine = IntelligentCsvAnalyzer.parseCSVLine;
+  
+  static formatAmount(amountStr: string | null): string {
+    if (!amountStr) return 'N$ 0';
+    const numericValue = parseFloat(amountStr.replace(/[^\d.-]/g, '')) || 0;
+    return `N$ ${numericValue.toLocaleString()}`;
+  }
+  
+  static parseAmount(amountStr: string): number {
+    return parseFloat(amountStr.replace(/[N$,\s]/g, '')) || 0;
+  }
+  
+  static convertToLegacyRecord(mappedRecord: Record<string, string>, id: number): DebtorRecord {
+    return {
+      debtorId: mappedRecord.debtorId || `DEBTOR_${id}`,
+      debtorFirstname: mappedRecord.debtorFirstname || 'Unknown',
+      debtorSurname: mappedRecord.debtorSurname || 'Unknown',
+      homePhone1: mappedRecord.homePhone1,
+      homePhone2: mappedRecord.homePhone2,
+      cellPhone1: mappedRecord.cellPhone1,
+      cellPhone2: mappedRecord.cellPhone2,
+      cellPhone3: mappedRecord.cellPhone3,
+      cellPhone4: mappedRecord.cellPhone4,
+      workPhone1: mappedRecord.workPhone1,
+      workPhone2: mappedRecord.workPhone2,
+      email1: mappedRecord.email1,
+      email2: mappedRecord.email2,
+      email3: mappedRecord.email3,
+      postalAddressLine1: mappedRecord.postalAddressLine1,
+      postalAddressLine2: mappedRecord.postalAddressLine2,
+      postalCode: mappedRecord.postalCode,
+      streetAddressLine1: mappedRecord.streetAddressLine1,
+      streetAddressLine2: mappedRecord.streetAddressLine2,
+      streetPostalCode: mappedRecord.streetPostalCode,
+      amount: mappedRecord.amount || '0',
+      capitalOnDefault: mappedRecord.capitalOnDefault,
+      capitalPortion: mappedRecord.capitalPortion,
+      interestPortion: mappedRecord.interestPortion,
+      legalFeePortion: mappedRecord.legalFeePortion,
+      lastPaymentDate: mappedRecord.lastPaymentDate,
+      lastPaymentAmount: mappedRecord.lastPaymentAmount,
+      occupation: mappedRecord.occupation,
+      nationality: mappedRecord.nationality,
+      maritalStatus: mappedRecord.maritalStatus,
+      previousAttorneyLegalStage: mappedRecord.legalStatus || mappedRecord.previousAttorneyLegalStage,
+      adminRef: mappedRecord.adminRef,
+      adminApplicationDate: mappedRecord.adminApplicationDate
+    };
+  }
+}
+
+// Legacy function - keeping for compatibility
+export async function processCsvFile(file: File): Promise<AnalysisResults> {
+  const result = await processIntelligentCsv(file);
+  return result.analysisResults;
+}
+
 // Separate function to parse CSV and return both raw data and analysis
 export async function parseCsvFile(file: File): Promise<{ rawData: any[], analysisResults: AnalysisResults }> {
   return new Promise((resolve, reject) => {
@@ -319,7 +562,21 @@ export async function parseCsvFile(file: File): Promise<{ rawData: any[], analys
     reader.onload = (e) => {
       try {
        console.log('File read successfully, processing content...');
-        const result = parseAndProcessCsv(e.target?.result as string);
+        const csvContent = e.target?.result as string;
+        
+        // Try intelligent processing first
+        try {
+          const analysis = IntelligentCsvAnalyzer.analyzeCsvStructure(csvContent);
+          const result = parseWithMapping(csvContent, analysis.suggestedMappings);
+          console.log('✅ Intelligent processing successful');
+          resolve(result);
+          return;
+        } catch (intelligentError) {
+          console.warn('⚠️ Intelligent processing failed, falling back to legacy:', intelligentError);
+        }
+        
+        // Fallback to legacy processing
+        const result = parseAndProcessCsv(csvContent);
        console.log('CSV parsing completed successfully');
         resolve(result);
       } catch (error) {
