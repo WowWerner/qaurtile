@@ -55,6 +55,11 @@ export function CsvMappingInterface({ csvContent, fileName, onMappingComplete, o
     }
   };
 
+  // Add missing helper method
+  const parseAmount = (amountStr: string): number => {
+    return parseFloat(amountStr.replace(/[N$,\s]/g, '')) || 0;
+  };
+
   const generatePreview = (currentMapping: Record<string, string>) => {
     const lines = csvContent.split('\n').filter(line => line.trim().length > 0);
     const headers = IntelligentCsvAnalyzer.parseCSVLine(lines[0]);
