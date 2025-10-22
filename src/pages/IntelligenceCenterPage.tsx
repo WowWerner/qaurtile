@@ -850,7 +850,15 @@ export function IntelligenceCenterPage() {
                                   <MoreVertical size={16} className="text-gray-600" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
+                              <DropdownMenuContent
+                                align="end"
+                                className="animate-none data-[state=open]:animate-none data-[state=closed]:animate-none"
+                                style={{
+                                  animation: 'none',
+                                  transformOrigin: 'top',
+                                  transition: 'opacity 0.15s ease-out, transform 0.15s ease-out'
+                                }}
+                              >
                                 <DropdownMenuItem
                                   onClick={(e) => handleDownloadCsv(upload, e)}
                                   className="cursor-pointer focus:bg-blue-50"

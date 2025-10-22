@@ -85,3 +85,23 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* Simple dropdown animation - just drop down from trigger */
+[data-radix-popper-content-wrapper] [role="menu"],
+[data-radix-popper-content-wrapper] [data-radix-dropdown-menu-content] {
+  animation: none !important;
+  transform-origin: top center !important;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out !important;
+}
+
+[data-radix-popper-content-wrapper][data-state="open"] [role="menu"],
+[data-radix-popper-content-wrapper][data-state="open"] [data-radix-dropdown-menu-content] {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+[data-radix-popper-content-wrapper][data-state="closed"] [role="menu"],
+[data-radix-popper-content-wrapper][data-state="closed"] [data-radix-dropdown-menu-content] {
+  opacity: 0 !important;
+  transform: translateY(-4px) !important;
+}
