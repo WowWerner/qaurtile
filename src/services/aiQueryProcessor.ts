@@ -89,39 +89,35 @@ export class AIQueryProcessor {
         };
       }
 
-      const { data, error } = await supabase.rpc('execute_readonly_query', {
+      const { data, error } = await supabase.rpc('execute_dynamic_query', {
         query_text: sqlQuery
       });
 
       if (error) {
         console.error('Database query error:', error);
-
-        const { data: directData, error: directError } = await supabase
-          .from('enhanced_features_with_actions')
-          .select('*')
-          .limit(100);
-
-        if (directError) {
-          return {
-            success: false,
-            error: directError.message,
-            sqlQuery
-          };
-        }
-
         return {
-          success: true,
-          data: directData || [],
-          sqlQuery,
-          rowCount: directData?.length || 0
+          success: false,
+          error: error.message,
+          sqlQuery
         };
       }
 
+      if (data && typeof data === 'object' && 'error' in data) {
+        console.error('Query execution error:', data);
+        return {
+          success: false,
+          error: data.message || 'Query execution failed',
+          sqlQuery
+        };
+      }
+
+      const resultData = Array.isArray(data) ? data : [];
+
       return {
         success: true,
-        data: data || [],
+        data: resultData,
         sqlQuery,
-        rowCount: data?.length || 0
+        rowCount: resultData.length
       };
     } catch (error: any) {
       console.error('Query execution error:', error);

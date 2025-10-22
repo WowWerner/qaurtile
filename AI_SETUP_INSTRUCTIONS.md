@@ -59,10 +59,11 @@ VITE_OPENAI_API_KEY=your_openai_api_key
 
 ### Step 3: Verify Database Migration
 
-The database tables have already been created via migration. Verify they exist:
+The database tables and functions have already been created via migration. Verify they exist:
 - `ai_conversations` - Stores conversation metadata
 - `ai_messages` - Stores all chat messages
 - `ai_saved_findings` - Stores bookmarked insights
+- `execute_dynamic_query()` - Function to safely execute SELECT queries
 
 ### Step 4: Access the Feature
 
