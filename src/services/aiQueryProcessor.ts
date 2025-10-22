@@ -79,45 +79,32 @@ export class AIQueryProcessor {
 
   private static async executeQuery(userQuery: string, schema: string): Promise<QueryResult> {
     try {
-      const sqlQuery = await OpenAIService.generateSQL(userQuery, schema);
+      const queryPlan = await this.generateQueryPlan(userQuery, schema);
 
-      if (!this.isSafeQuery(sqlQuery)) {
+      if (!queryPlan.success) {
         return {
           success: false,
-          error: 'Query contains unsafe operations. Only SELECT queries are allowed.',
-          sqlQuery
+          error: queryPlan.error || 'Failed to understand query',
+          sqlQuery: ''
         };
       }
 
-      const { data, error } = await supabase.rpc('execute_dynamic_query', {
-        query_text: sqlQuery
-      });
+      const { data, error } = await this.executeSupabaseQuery(queryPlan);
 
       if (error) {
         console.error('Database query error:', error);
         return {
           success: false,
-          error: error.message,
-          sqlQuery
+          error: error.message || 'Failed to execute query',
+          sqlQuery: queryPlan.description || ''
         };
       }
-
-      if (data && typeof data === 'object' && 'error' in data) {
-        console.error('Query execution error:', data);
-        return {
-          success: false,
-          error: data.message || 'Query execution failed',
-          sqlQuery
-        };
-      }
-
-      const resultData = Array.isArray(data) ? data : [];
 
       return {
         success: true,
-        data: resultData,
-        sqlQuery,
-        rowCount: resultData.length
+        data: data || [],
+        sqlQuery: queryPlan.description || 'Query executed successfully',
+        rowCount: data?.length || 0
       };
     } catch (error: any) {
       console.error('Query execution error:', error);
@@ -129,16 +116,86 @@ export class AIQueryProcessor {
     }
   }
 
-  private static isSafeQuery(sql: string): boolean {
-    const upperSQL = sql.toUpperCase();
-    const dangerousKeywords = [
-      'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE',
-      'TRUNCATE', 'GRANT', 'REVOKE', 'EXECUTE', 'CALL'
-    ];
+  private static async generateQueryPlan(userQuery: string, schema: string): Promise<any> {
+    try {
+      const response = await OpenAIService.chat([
+        {
+          role: 'system',
+          content: `You are a query planner for a Supabase database. Analyze the user's question and return a JSON query plan.
 
-    return !dangerousKeywords.some(keyword => upperSQL.includes(keyword)) &&
-           upperSQL.trim().startsWith('SELECT');
+Available tables:
+${schema}
+
+Return ONLY a JSON object with this structure:
+{
+  "success": true,
+  "table": "table_name",
+  "columns": ["col1", "col2"],
+  "filters": [{"column": "name", "operator": "eq", "value": "something"}],
+  "orderBy": {"column": "name", "ascending": false},
+  "limit": 10,
+  "description": "Human readable description of the query"
+}
+
+Operators: eq, gt, lt, gte, lte, like, ilike
+If query is too complex, return {"success": false, "error": "reason"}`
+        },
+        {
+          role: 'user',
+          content: userQuery
+        }
+      ]);
+
+      const cleaned = response.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(cleaned);
+    } catch (error) {
+      console.error('Query plan generation error:', error);
+      return { success: false, error: 'Failed to generate query plan' };
+    }
   }
+
+  private static async executeSupabaseQuery(plan: any): Promise<{ data: any[] | null, error: any }> {
+    try {
+      let query: any = supabase.from(plan.table).select(plan.columns?.join(',') || '*');
+
+      if (plan.filters && Array.isArray(plan.filters)) {
+        for (const filter of plan.filters) {
+          const op = filter.operator;
+          const col = filter.column;
+          const val = filter.value;
+
+          if (op === 'eq') {
+            query = query.eq(col, val);
+          } else if (op === 'gt') {
+            query = query.gt(col, val);
+          } else if (op === 'lt') {
+            query = query.lt(col, val);
+          } else if (op === 'gte') {
+            query = query.gte(col, val);
+          } else if (op === 'lte') {
+            query = query.lte(col, val);
+          } else if (op === 'like') {
+            query = query.like(col, val);
+          } else if (op === 'ilike') {
+            query = query.ilike(col, val);
+          }
+        }
+      }
+
+      if (plan.orderBy) {
+        query = query.order(plan.orderBy.column, { ascending: plan.orderBy.ascending !== false });
+      }
+
+      const limitValue = plan.limit || 100;
+      query = query.limit(limitValue);
+
+      const { data, error } = await query;
+      return { data, error };
+    } catch (error: any) {
+      return { data: null, error };
+    }
+  }
+
 
   private static async generateAnswerFromData(
     userQuery: string,

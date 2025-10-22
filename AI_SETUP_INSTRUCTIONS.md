@@ -141,19 +141,30 @@ Click on any suggested question or type your own to start!
 
 The AI agent can:
 - Understand natural language questions
-- Convert questions to safe SQL queries
-- Query multiple tables with intelligent JOINs
+- Convert questions to Supabase query plans (safe and reliable)
+- Query tables with filters, sorting, and limits
 - Generate various chart types automatically
 - Provide contextual insights and recommendations
 - Suggest follow-up questions
 - Export data in multiple formats
 
+### How It Works
+
+Instead of generating raw SQL (which can have syntax errors), the AI:
+1. Analyzes your question
+2. Creates a structured query plan (table, columns, filters, sort order)
+3. Executes the plan using Supabase's safe query builder
+4. Returns results formatted for easy understanding
+
+This approach eliminates SQL syntax errors and is much more reliable!
+
 ### Safety Features
 
-- **Query Validation**: Only SELECT queries allowed
+- **Query Plan Validation**: AI generates structured plans, not raw SQL
 - **Row-Level Security**: Users can only access their own conversations
-- **Rate Limiting**: Built-in protection against excessive API usage
+- **Automatic Limits**: Queries limited to 100 results by default
 - **Data Isolation**: Each user's conversations are completely private
+- **Safe Operations**: Only SELECT/read operations possible
 
 ## Troubleshooting
 
