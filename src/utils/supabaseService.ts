@@ -287,6 +287,48 @@ export class SupabaseService {
     return data || [];
   }
 
+  // Delete CSV upload and all associated data
+  static async deleteCsvUpload(id: string): Promise<void> {
+    try {
+      console.log('Deleting CSV upload:', id);
+
+      // Get the upload record first to get the table name
+      const uploadData = await this.getCsvUpload(id);
+
+      if (!uploadData) {
+        throw new Error('CSV upload not found');
+      }
+
+      // Delete all debtor records associated with this CSV
+      // The ON DELETE CASCADE should handle this, but we'll be explicit
+      const { error: debtorError } = await supabase
+        .from('debtor_records')
+        .delete()
+        .eq('csv_upload_id', id);
+
+      if (debtorError) {
+        console.error('Error deleting debtor records:', debtorError);
+        throw debtorError;
+      }
+
+      // Delete the CSV upload record
+      const { error: uploadError } = await supabase
+        .from('csv_uploads')
+        .delete()
+        .eq('id', id);
+
+      if (uploadError) {
+        console.error('Error deleting CSV upload:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Successfully deleted CSV upload and associated records');
+    } catch (error) {
+      console.error('Error in deleteCsvUpload:', error);
+      throw error;
+    }
+  }
+
   // Get CSV upload by ID
   static async getCsvUpload(id: string): Promise<CsvUpload | null> {
     const { data, error } = await supabase

@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, BarChart3, Settings, Info, Phone, MapPin, CreditCard, DollarSign, Users, Scale, CheckCircle, Clock, Play } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, BarChart3, Settings, Info, Phone, MapPin, CreditCard, DollarSign, Users, Scale, CheckCircle, Clock, Play, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
 import { AnalysisResults } from '../utils/csvProcessor';
 import { extractCSVPreview, parseCSVWithMapping } from '../utils/enhancedCsvProcessor';
 import { mapHeaders, type FieldMapping } from '../utils/headerMapper';
@@ -37,6 +39,8 @@ export function IntelligenceCenterPage() {
   const [csvSampleRow, setCsvSampleRow] = useState<{ [key: string]: string }>();
   const [headerMappings, setHeaderMappings] = useState<FieldMapping[]>([]);
   const [csvFileContent, setCsvFileContent] = useState<string>('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [csvToDelete, setCsvToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Load previous uploads on component mount
   useEffect(() => {
@@ -229,6 +233,39 @@ export function IntelligenceCenterPage() {
     setActiveCsvId(null);
     setActiveCsvName('');
     setCsvUploadId(null);
+  };
+
+  const handleDeleteCsv = (upload: any, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent selecting the CSV when clicking delete
+    setCsvToDelete({ id: upload.id, name: upload.name || upload.filename });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteCsv = async () => {
+    if (!csvToDelete) return;
+
+    try {
+      await SupabaseService.deleteCsvUpload(csvToDelete.id);
+
+      // If the deleted CSV was active, unselect it
+      if (activeCsvId === csvToDelete.id) {
+        handleUnselectCsv();
+      }
+
+      // Reload the uploads list
+      await loadPreviousUploads();
+
+      setDeleteDialogOpen(false);
+      setCsvToDelete(null);
+    } catch (error) {
+      console.error('Error deleting CSV:', error);
+      alert('Failed to delete CSV file: ' + (error as Error).message);
+    }
+  };
+
+  const cancelDeleteCsv = () => {
+    setDeleteDialogOpen(false);
+    setCsvToDelete(null);
   };
 
   const resetUpload = () => {
@@ -714,17 +751,17 @@ export function IntelligenceCenterPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {previousUploads.map((upload) => (
-                      <div 
+                      <div
                         key={upload.id}
                         className={`p-4 rounded-lg border transition-all cursor-pointer ${
-                          activeCsvId === upload.id 
-                            ? 'border-[rgb(0,171,174)] bg-[rgb(0,171,174)]/5' 
+                          activeCsvId === upload.id
+                            ? 'border-[rgb(0,171,174)] bg-[rgb(0,171,174)]/5'
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                         onClick={() => handleSelectPreviousUpload(upload.id)}
                       >
                         <div className="flex justify-between items-center">
-                          <div>
+                          <div className="flex-1">
                             <h4 className="font-medium text-gray-900">{upload.name || upload.filename}</h4>
                             <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
                               <span>File: {upload.filename}</span>
@@ -734,8 +771,8 @@ export function IntelligenceCenterPage() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 rounded text-xs ${
-                              upload.status === 'completed' 
-                                ? 'bg-green-100 text-green-700' 
+                              upload.status === 'completed'
+                                ? 'bg-green-100 text-green-700'
                                 : 'bg-orange-100 text-orange-700'
                             }`}>
                               {upload.status}
@@ -743,6 +780,26 @@ export function IntelligenceCenterPage() {
                             {activeCsvId === upload.id && (
                               <CheckCircle size={16} className="text-[rgb(0,171,174)]" />
                             )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-gray-200"
+                                >
+                                  <MoreVertical size={16} className="text-gray-600" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={(e) => handleDeleteCsv(upload, e)}
+                                  className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                                >
+                                  <Trash2 size={16} className="mr-2" />
+                                  Delete CSV
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                       </div>
@@ -1221,6 +1278,27 @@ export function IntelligenceCenterPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete CSV Upload</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{csvToDelete?.name}"? This will permanently remove the CSV file and all associated debtor records. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteCsv}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteCsv}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
