@@ -115,7 +115,7 @@ export function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-8">
+    <div className="min-h-screen bg-white p-8">
       {/* Header */}
       <div className="flex justify-between items-start mb-16">
         <div className="flex flex-col">
