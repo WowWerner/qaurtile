@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
+import { Checkbox } from '../components/ui/checkbox';
 import { AnalysisResults } from '../utils/csvProcessor';
 import { extractCSVPreview, parseCSVWithMapping } from '../utils/enhancedCsvProcessor';
 import { mapHeaders, type FieldMapping } from '../utils/headerMapper';
@@ -41,6 +42,8 @@ export function IntelligenceCenterPage() {
   const [csvFileContent, setCsvFileContent] = useState<string>('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [csvToDelete, setCsvToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
+  const [selectedCsvIds, setSelectedCsvIds] = useState<Set<string>>(new Set());
 
   // Load previous uploads on component mount
   useEffect(() => {
@@ -301,22 +304,64 @@ export function IntelligenceCenterPage() {
     setDeleteDialogOpen(true);
   };
 
+  const handleToggleBulkDelete = () => {
+    setBulkDeleteMode(!bulkDeleteMode);
+    setSelectedCsvIds(new Set());
+  };
+
+  const handleSelectCsv = (id: string) => {
+    const newSelected = new Set(selectedCsvIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedCsvIds(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCsvIds.size === previousUploads.length) {
+      setSelectedCsvIds(new Set());
+    } else {
+      setSelectedCsvIds(new Set(previousUploads.map(u => u.id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedCsvIds.size === 0) {
+      alert('Please select at least one file to delete');
+      return;
+    }
+    setDeleteDialogOpen(true);
+  };
+
   const confirmDeleteCsv = async () => {
-    if (!csvToDelete) return;
-
     try {
-      await SupabaseService.deleteCsvUpload(csvToDelete.id);
-
-      // If the deleted CSV was active, unselect it
-      if (activeCsvId === csvToDelete.id) {
-        handleUnselectCsv();
+      // Handle bulk delete
+      if (bulkDeleteMode && selectedCsvIds.size > 0) {
+        for (const id of selectedCsvIds) {
+          await SupabaseService.deleteCsvUpload(id);
+          // If any deleted CSV was active, unselect it
+          if (activeCsvId === id) {
+            handleUnselectCsv();
+          }
+        }
+        setSelectedCsvIds(new Set());
+        setBulkDeleteMode(false);
+      }
+      // Handle single delete
+      else if (csvToDelete) {
+        await SupabaseService.deleteCsvUpload(csvToDelete.id);
+        // If the deleted CSV was active, unselect it
+        if (activeCsvId === csvToDelete.id) {
+          handleUnselectCsv();
+        }
+        setCsvToDelete(null);
       }
 
       // Reload the uploads list
       await loadPreviousUploads();
-
       setDeleteDialogOpen(false);
-      setCsvToDelete(null);
     } catch (error) {
       console.error('Error deleting CSV:', error);
       alert('Failed to delete CSV file: ' + (error as Error).message);
@@ -804,29 +849,83 @@ export function IntelligenceCenterPage() {
             {previousUploads.length > 0 && !showHeaderMapping && (
               <Card className="border-gray-200 mb-8">
                 <CardHeader>
-                  <CardTitle className="text-lg font-light text-gray-800">
-                    Previously Uploaded CSV Files
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-light text-gray-800">
+                      Previously Uploaded CSV Files
+                    </CardTitle>
+                    <div className="flex items-center gap-3">
+                      {bulkDeleteMode && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={selectedCsvIds.size === previousUploads.length}
+                              onCheckedChange={handleSelectAll}
+                              id="select-all"
+                            />
+                            <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
+                              Select All
+                            </label>
+                          </div>
+                          <Button
+                            onClick={handleBulkDelete}
+                            variant="destructive"
+                            size="sm"
+                            disabled={selectedCsvIds.size === 0}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            <Trash2 size={16} className="mr-2" />
+                            Delete Selected ({selectedCsvIds.size})
+                          </Button>
+                          <Button
+                            onClick={handleToggleBulkDelete}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      )}
+                      {!bulkDeleteMode && (
+                        <Button
+                          onClick={handleToggleBulkDelete}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Trash2 size={16} className="mr-2" />
+                          Delete Files
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {previousUploads.map((upload) => (
                       <div
                         key={upload.id}
-                        className={`p-4 rounded-lg border cursor-pointer ${
-                          activeCsvId === upload.id
+                        className={`p-4 rounded-lg border ${bulkDeleteMode ? 'cursor-default' : 'cursor-pointer'} ${
+                          activeCsvId === upload.id && !bulkDeleteMode
                             ? 'border-[rgb(0,171,174)] bg-[rgb(0,171,174)]/5'
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
-                        onClick={() => handleSelectPreviousUpload(upload.id)}
+                        onClick={() => !bulkDeleteMode && handleSelectPreviousUpload(upload.id)}
                       >
                         <div className="flex justify-between items-center">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{upload.name || upload.filename}</h4>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                              <span>File: {upload.filename}</span>
-                              <span>Rows: {upload.total_debtors?.toLocaleString() || 'N/A'}</span>
-                              <span>Uploaded: {new Date(upload.uploaded_at).toLocaleDateString()}</span>
+                          <div className="flex items-center gap-3 flex-1">
+                            {bulkDeleteMode && (
+                              <Checkbox
+                                checked={selectedCsvIds.has(upload.id)}
+                                onCheckedChange={() => handleSelectCsv(upload.id)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            )}
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{upload.name || upload.filename}</h4>
+                              <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                                <span>File: {upload.filename}</span>
+                                <span>Rows: {upload.total_debtors?.toLocaleString() || 'N/A'}</span>
+                                <span>Uploaded: {new Date(upload.uploaded_at).toLocaleDateString()}</span>
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -837,9 +936,10 @@ export function IntelligenceCenterPage() {
                             }`}>
                               {upload.status}
                             </span>
-                            {activeCsvId === upload.id && (
+                            {activeCsvId === upload.id && !bulkDeleteMode && (
                               <CheckCircle size={16} className="text-[rgb(0,171,174)]" />
                             )}
+                            {!bulkDeleteMode && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                 <Button
@@ -875,6 +975,7 @@ export function IntelligenceCenterPage() {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1358,9 +1459,15 @@ export function IntelligenceCenterPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete CSV Upload</AlertDialogTitle>
+            <AlertDialogTitle>
+              {bulkDeleteMode && selectedCsvIds.size > 0
+                ? `Delete ${selectedCsvIds.size} CSV Upload${selectedCsvIds.size > 1 ? 's' : ''}`
+                : 'Delete CSV Upload'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{csvToDelete?.name}"? This will permanently remove the CSV file and all associated debtor records. This action cannot be undone.
+              {bulkDeleteMode && selectedCsvIds.size > 0
+                ? `Are you sure you want to delete ${selectedCsvIds.size} CSV file${selectedCsvIds.size > 1 ? 's' : ''}? This will permanently remove ${selectedCsvIds.size > 1 ? 'these files' : 'this file'} and all associated debtor records. This action cannot be undone.`
+                : `Are you sure you want to delete "${csvToDelete?.name}"? This will permanently remove the CSV file and all associated debtor records. This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1369,7 +1476,7 @@ export function IntelligenceCenterPage() {
               onClick={confirmDeleteCsv}
               className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
             >
-              Delete
+              Delete {bulkDeleteMode && selectedCsvIds.size > 0 ? `${selectedCsvIds.size} File${selectedCsvIds.size > 1 ? 's' : ''}` : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
