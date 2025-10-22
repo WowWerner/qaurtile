@@ -1,4 +1,4 @@
-interface DebtorRecord {
+export interface DebtorRecord {
   // Basic Info
   debtorId: string;
   debtorFirstname: string;
@@ -45,7 +45,7 @@ interface DebtorRecord {
   adminApplicationDate?: string;
 }
 
-interface ProcessedDebtor {
+export interface ProcessedDebtor {
   id: number;
   name: string;
   score: number;

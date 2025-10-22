@@ -5,7 +5,11 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { parseCsvFile, AnalysisResults } from '../utils/csvProcessor';
+import { AnalysisResults } from '../utils/csvProcessor';
+import { extractCSVPreview, parseCSVWithMapping } from '../utils/enhancedCsvProcessor';
+import { mapHeaders, type FieldMapping } from '../utils/headerMapper';
+import { CSVHeaderPreview } from '../components/CSVHeaderPreview';
+import { CSVTemplateGenerator } from '../components/CSVTemplateGenerator';
 import { SupabaseService } from '../utils/supabaseService';
 
 export function IntelligenceCenterPage() {
@@ -28,6 +32,11 @@ export function IntelligenceCenterPage() {
   const [previousUploads, setPreviousUploads] = useState<any[]>([]);
  const [isProcessing, setIsProcessing] = useState(false);
   const [showNameDialog, setShowNameDialog] = useState(false);
+  const [showHeaderMapping, setShowHeaderMapping] = useState(false);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvSampleRow, setCsvSampleRow] = useState<{ [key: string]: string }>();
+  const [headerMappings, setHeaderMappings] = useState<FieldMapping[]>([]);
+  const [csvFileContent, setCsvFileContent] = useState<string>('');
 
   // Load previous uploads on component mount
   useEffect(() => {
@@ -54,14 +63,41 @@ export function IntelligenceCenterPage() {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'text/csv') {
       setUploadedFile(file);
       // Set default name to filename without extension
       const defaultName = file.name.replace(/\.[^/.]+$/, '');
       setCsvName(defaultName);
-      setShowNameDialog(true);
+
+      // Read file to preview headers
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          setCsvFileContent(content);
+          const { headers, sampleRows } = extractCSVPreview(content);
+          setCsvHeaders(headers);
+          setCsvSampleRow(sampleRows[0]);
+
+          // Auto-detect mappings
+          const mappingResult = mapHeaders(headers, sampleRows[0]);
+
+          // If we have unmapped or missing required fields, show mapping UI
+          if (mappingResult.unmappedHeaders.length > 0 || mappingResult.missingRequiredFields.length > 0) {
+            setShowNameDialog(true);
+          } else {
+            // Auto-mapping successful, just show name dialog
+            setHeaderMappings(mappingResult.mappings);
+            setShowNameDialog(true);
+          }
+        };
+        reader.readAsText(file);
+      } catch (error) {
+        console.error('Error reading CSV file:', error);
+        alert('Error reading CSV file: ' + (error as Error).message);
+      }
     } else {
       alert('Please upload a valid CSV file');
     }
@@ -72,7 +108,27 @@ export function IntelligenceCenterPage() {
       alert('Please provide a name for your CSV upload');
       return;
     }
-    setShowNameDialog(false);
+
+    // Check if header mapping is needed
+    const mappingResult = mapHeaders(csvHeaders, csvSampleRow);
+    if (mappingResult.unmappedHeaders.length > 0 || mappingResult.missingRequiredFields.length > 0) {
+      setShowNameDialog(false);
+      setShowHeaderMapping(true);
+    } else {
+      // Auto-mapping successful, use detected mappings
+      setHeaderMappings(mappingResult.mappings);
+      setShowNameDialog(false);
+    }
+  };
+
+  const handleMappingComplete = (mappings: FieldMapping[]) => {
+    setHeaderMappings(mappings);
+    setShowHeaderMapping(false);
+  };
+
+  const handleCancelMapping = () => {
+    setShowHeaderMapping(false);
+    resetUpload();
   };
 
   const handleProcessAnalysis = async () => {
@@ -80,19 +136,24 @@ export function IntelligenceCenterPage() {
       alert('Please upload a CSV file first');
       return;
     }
-    
+
+    if (headerMappings.length === 0) {
+      alert('Please complete header mapping first');
+      return;
+    }
+
     setIsProcessing(true);
     setProcessingProgress(0);
     setProcessingStep('parse');
-    
+
     try {
-      console.log('Starting multi-step CSV process for file:', uploadedFile.name);
-      
-      // Step 1: Parse CSV file
+      console.log('Starting multi-step CSV process with custom mappings for file:', uploadedFile.name);
+
+      // Step 1: Parse CSV file with custom mappings
       setProcessingStep('parse');
       setProcessingProgress(20);
-      
-      const { rawData, analysisResults } = await parseCsvFile(uploadedFile);
+
+      const { rawData, analysisResults } = await parseCSVWithMapping(uploadedFile, headerMappings);
       console.log('CSV parsing completed:', { rawDataCount: rawData.length });
       
       // Step 2: Save raw data to database
@@ -183,6 +244,11 @@ export function IntelligenceCenterPage() {
     setActiveCsvId(null);
     setActiveCsvName('');
     setShowNameDialog(false);
+    setShowHeaderMapping(false);
+    setCsvHeaders([]);
+    setCsvSampleRow(undefined);
+    setHeaderMappings([]);
+    setCsvFileContent('');
   };
 
   const getStepStatus = (step: string) => {
@@ -275,6 +341,19 @@ export function IntelligenceCenterPage() {
           </TabsList>
           
           <TabsContent value="upload">
+            {/* Header Mapping Dialog */}
+            {showHeaderMapping && (
+              <div className="mb-6">
+                <CSVHeaderPreview
+                  headers={csvHeaders}
+                  sampleRow={csvSampleRow}
+                  onMappingComplete={handleMappingComplete}
+                  onCancel={handleCancelMapping}
+                />
+              </div>
+            )}
+
+            {!showHeaderMapping && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* CSV Name Dialog */}
               {showNameDialog && (
@@ -622,9 +701,10 @@ export function IntelligenceCenterPage() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Previously Uploaded CSV Files */}
-            {previousUploads.length > 0 && (
+            {previousUploads.length > 0 && !showHeaderMapping && (
               <Card className="border-gray-200 mb-8">
                 <CardHeader>
                   <CardTitle className="text-lg font-light text-gray-800">
@@ -1102,6 +1182,11 @@ export function IntelligenceCenterPage() {
           </div>
         </div>
 
+        {/* CSV Template Generator */}
+        <div className="mb-8">
+          <CSVTemplateGenerator />
+        </div>
+
         {/* Instructions */}
         <Card className="border-gray-200">
           <CardHeader>
@@ -1116,7 +1201,7 @@ export function IntelligenceCenterPage() {
                   <span className="text-gray-600 font-medium">1</span>
                 </div>
                 <h4 className="font-light text-gray-800 mb-2">Upload CSV</h4>
-                <p className="text-sm text-gray-500 font-light">Upload your debtor handover CSV file and provide a custom name</p>
+                <p className="text-sm text-gray-500 font-light">Upload your debtor handover CSV file - system auto-detects headers</p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
