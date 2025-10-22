@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, BarChart3, Settings, Info, Phone, MapPin, CreditCard, DollarSign, Users, Scale, CheckCircle, Clock, Play, MoreVertical, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, BarChart3, Settings, Info, Phone, MapPin, CreditCard, DollarSign, Users, Scale, CheckCircle, Clock, Play, MoreVertical, Trash2, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -233,6 +233,66 @@ export function IntelligenceCenterPage() {
     setActiveCsvId(null);
     setActiveCsvName('');
     setCsvUploadId(null);
+  };
+
+  const handleDownloadCsv = async (upload: any, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent selecting the CSV when clicking download
+
+    try {
+      // Fetch all debtor records for this CSV
+      const debtors = await SupabaseService.getRawCsvData(upload.id);
+
+      if (!debtors || debtors.length === 0) {
+        alert('No data available to download for this CSV');
+        return;
+      }
+
+      // Get all unique column names from the data
+      const allColumns = new Set<string>();
+      debtors.forEach((debtor: any) => {
+        Object.keys(debtor).forEach(key => {
+          // Exclude internal fields
+          if (key !== 'id' && key !== 'csv_upload_id' && key !== 'created_at') {
+            allColumns.add(key);
+          }
+        });
+      });
+
+      const columns = Array.from(allColumns);
+
+      // Create CSV header
+      const csvHeader = columns.join(',');
+
+      // Create CSV rows
+      const csvRows = debtors.map((debtor: any) => {
+        return columns.map(column => {
+          const value = debtor[column] || '';
+          // Escape values that contain commas or quotes
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        }).join(',');
+      });
+
+      // Combine header and rows
+      const csvContent = [csvHeader, ...csvRows].join('\n');
+
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${upload.name || upload.filename}_export.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading CSV:', error);
+      alert('Failed to download CSV file: ' + (error as Error).message);
+    }
   };
 
   const handleDeleteCsv = (upload: any, event: React.MouseEvent) => {
@@ -791,6 +851,13 @@ export function IntelligenceCenterPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={(e) => handleDownloadCsv(upload, e)}
+                                  className="cursor-pointer focus:bg-blue-50"
+                                >
+                                  <Download size={16} className="mr-2" />
+                                  Download File
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={(e) => handleDeleteCsv(upload, e)}
                                   className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
