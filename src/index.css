@@ -87,21 +87,21 @@ body {
 }
 
 /* Simple dropdown animation - just drop down from trigger */
-[data-radix-popper-content-wrapper] [role="menu"],
-[data-radix-popper-content-wrapper] [data-radix-dropdown-menu-content] {
+[role="menu"][data-radix-dropdown-menu-content],
+div[data-radix-dropdown-menu-content] {
   animation: none !important;
-  transform-origin: top center !important;
-  transition: opacity 0.15s ease-out, transform 0.15s ease-out !important;
+  transform-origin: top !important;
+  transition: opacity 0.15s ease-out !important;
 }
 
-[data-radix-popper-content-wrapper][data-state="open"] [role="menu"],
-[data-radix-popper-content-wrapper][data-state="open"] [data-radix-dropdown-menu-content] {
+[role="menu"][data-radix-dropdown-menu-content][data-state="open"],
+div[data-radix-dropdown-menu-content][data-state="open"] {
   opacity: 1 !important;
-  transform: translateY(0) !important;
+  animation: none !important;
 }
 
-[data-radix-popper-content-wrapper][data-state="closed"] [role="menu"],
-[data-radix-popper-content-wrapper][data-state="closed"] [data-radix-dropdown-menu-content] {
+[role="menu"][data-radix-dropdown-menu-content][data-state="closed"],
+div[data-radix-dropdown-menu-content][data-state="closed"] {
   opacity: 0 !important;
-  transform: translateY(-4px) !important;
+  animation: none !important;
 }
