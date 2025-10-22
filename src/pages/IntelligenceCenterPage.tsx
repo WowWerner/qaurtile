@@ -813,7 +813,7 @@ export function IntelligenceCenterPage() {
                     {previousUploads.map((upload) => (
                       <div
                         key={upload.id}
-                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                        className={`p-4 rounded-lg border cursor-pointer ${
                           activeCsvId === upload.id
                             ? 'border-[rgb(0,171,174)] bg-[rgb(0,171,174)]/5'
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
