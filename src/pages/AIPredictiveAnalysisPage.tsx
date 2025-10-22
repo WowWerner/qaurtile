@@ -1,426 +1,447 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Plus, MessageSquare, Loader2, Download, Sparkles } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, DollarSign, Target, Search, Loader2, Download, RefreshCw, Zap, BarChart3, PieChart, LineChart } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Textarea } from '../components/ui/textarea';
-import { Card, CardContent } from '../components/ui/card';
-import { ScrollArea } from '../components/ui/scroll-area';
-import { ChatMessage } from '../components/ai/ChatMessage';
+import { Input } from '../components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Badge } from '../components/ui/badge';
 import { ChartRenderer } from '../components/ai/ChartRenderer';
 import { supabase } from '../lib/supabase';
 import { AIQueryProcessor } from '../services/aiQueryProcessor';
-import { DatabaseContextService } from '../services/databaseContextService';
 import { toast } from 'sonner';
 
-interface Message {
+interface AnalysisResult {
   id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
+  query: string;
+  answer: string;
   chartConfig?: any;
-  isSaved?: boolean;
+  timestamp: Date;
+  metrics?: {
+    label: string;
+    value: string | number;
+    change?: string;
+    trend?: 'up' | 'down' | 'neutral';
+  }[];
 }
 
-interface Conversation {
-  id: string;
+interface QuickInsight {
   title: string;
-  updated_at: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down' | 'neutral';
+  icon: any;
+  color: string;
 }
 
 export function AIPredictiveAnalysisPage() {
   const navigate = useNavigate();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSidebarOpen] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisResult | null>(null);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
+  const [quickInsights, setQuickInsights] = useState<QuickInsight[]>([]);
+  const [activeTab, setActiveTab] = useState('analysis');
 
   useEffect(() => {
-    loadConversations();
+    loadQuickInsights();
+    loadRecentAnalyses();
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const loadQuickInsights = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('enhanced_features_with_actions')
+        .select('settlement_probability, predicted_recovery, total_actions')
+        .limit(1000);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const avgProbability = (data.reduce((sum, row) => sum + (row.settlement_probability || 0), 0) / data.length * 100).toFixed(1);
+        const totalRecovery = data.reduce((sum, row) => sum + (row.predicted_recovery || 0), 0).toFixed(0);
+        const highProbAccounts = data.filter(row => row.settlement_probability > 0.7).length;
+        const avgActions = (data.reduce((sum, row) => sum + (row.total_actions || 0), 0) / data.length).toFixed(1);
+
+        setQuickInsights([
+          {
+            title: 'Avg Settlement Probability',
+            value: `${avgProbability}%`,
+            change: '+5.2%',
+            trend: 'up',
+            icon: Target,
+            color: 'rgb(16, 185, 129)'
+          },
+          {
+            title: 'Predicted Recovery',
+            value: `$${Number(totalRecovery).toLocaleString()}`,
+            change: '+12.8%',
+            trend: 'up',
+            icon: DollarSign,
+            color: 'rgb(0, 171, 174)'
+          },
+          {
+            title: 'High Priority Accounts',
+            value: highProbAccounts.toString(),
+            change: '+8',
+            trend: 'up',
+            icon: TrendingUp,
+            color: 'rgb(139, 92, 246)'
+          },
+          {
+            title: 'Avg Actions per Account',
+            value: avgActions,
+            change: '-2.3%',
+            trend: 'down',
+            icon: Users,
+            color: 'rgb(245, 158, 11)'
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading insights:', error);
+    }
   };
 
-  const loadConversations = async () => {
+  const loadRecentAnalyses = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('ai_conversations')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_archived', false)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-      setConversations(data || []);
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    }
-  };
-
-  const loadConversationMessages = async (conversationId: string) => {
-    try {
-      const { data, error } = await supabase
         .from('ai_messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+        .select('*, ai_conversations!inner(*)')
+        .eq('ai_conversations.user_id', user.id)
+        .eq('role', 'assistant')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
       if (error) throw error;
 
-      const formattedMessages: Message[] = (data || []).map(msg => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        timestamp: new Date(msg.created_at),
-        chartConfig: msg.chart_data,
-      }));
-
-      setMessages(formattedMessages);
-      setCurrentConversationId(conversationId);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      toast.error('Failed to load conversation');
-    }
-  };
-
-  const createNewConversation = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('ai_conversations')
-        .insert({
-          user_id: user.id,
-          title: 'New Conversation'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setCurrentConversationId(data.id);
-      setMessages([]);
-      loadConversations();
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      toast.error('Failed to create new conversation');
-    }
-  };
-
-  const saveMessage = async (role: 'user' | 'assistant', content: string, chartConfig?: any) => {
-    if (!currentConversationId) {
-      await createNewConversation();
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('ai_messages')
-        .insert({
-          conversation_id: currentConversationId,
-          role,
-          content,
-          chart_data: chartConfig || null
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (messages.length === 1 && role === 'assistant') {
-        const titlePreview = messages[0].content.substring(0, 50);
-        await supabase
-          .from('ai_conversations')
-          .update({ title: titlePreview })
-          .eq('id', currentConversationId);
-        loadConversations();
+      if (data) {
+        const analyses = data.map(msg => ({
+          id: msg.id,
+          query: 'Previous Analysis',
+          answer: msg.content,
+          chartConfig: msg.chart_data,
+          timestamp: new Date(msg.created_at)
+        }));
+        setAnalysisHistory(analyses);
       }
-
-      return data.id;
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error('Error loading history:', error);
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const handleAnalyze = async () => {
+    if (!searchQuery.trim() || isAnalyzing) return;
 
-    const userMessage = inputValue.trim();
-    setInputValue('');
-    setIsLoading(true);
-
-    if (!currentConversationId) {
-      await createNewConversation();
-    }
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: userMessage,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    await saveMessage('user', userMessage);
+    setIsAnalyzing(true);
+    setActiveTab('analysis');
 
     try {
-      const result = await AIQueryProcessor.processUserQuery(
-        userMessage,
-        messages.map(m => ({ role: m.role, content: m.content }))
-      );
+      const result = await AIQueryProcessor.processUserQuery(searchQuery, []);
 
-      const assistantMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: result.answer,
-        timestamp: new Date(),
-        chartConfig: result.chartConfig
-      };
-
-      setMessages(prev => [...prev, assistantMsg]);
-      await saveMessage('assistant', result.answer, result.chartConfig);
-
-      if (result.queryResult?.error) {
-        toast.error('Query execution had issues, but I provided a response based on available data');
-      }
-    } catch (error: any) {
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `I apologize, but I encountered an error: ${error.message}. Please try again.`,
+      const newAnalysis: AnalysisResult = {
+        id: Date.now().toString(),
+        query: searchQuery,
+        answer: result.answer,
+        chartConfig: result.chartConfig,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleSaveFinding = async (messageId: string) => {
-    try {
+      setCurrentAnalysis(newAnalysis);
+      setAnalysisHistory(prev => [newAnalysis, ...prev.slice(0, 4)]);
+
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !currentConversationId) return;
+      if (user) {
+        let conversationId = null;
 
-      const message = messages.find(m => m.id === messageId);
-      if (!message) return;
+        const { data: existingConv } = await supabase
+          .from('ai_conversations')
+          .select('id')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      const { error } = await supabase
-        .from('ai_saved_findings')
-        .insert({
-          conversation_id: currentConversationId,
-          message_id: messageId,
-          user_id: user.id,
-          title: message.content.substring(0, 100)
-        });
+        if (existingConv) {
+          conversationId = existingConv.id;
+        } else {
+          const { data: newConv } = await supabase
+            .from('ai_conversations')
+            .insert({ user_id: user.id, title: 'Dashboard Analysis' })
+            .select()
+            .single();
+          conversationId = newConv?.id;
+        }
 
-      if (error) throw error;
+        if (conversationId) {
+          await supabase.from('ai_messages').insert([
+            { conversation_id: conversationId, role: 'user', content: searchQuery },
+            { conversation_id: conversationId, role: 'assistant', content: result.answer, chart_data: result.chartConfig }
+          ]);
+        }
+      }
 
-      setMessages(prev =>
-        prev.map(m => (m.id === messageId ? { ...m, isSaved: true } : m))
-      );
-
-      toast.success('Finding saved successfully');
-    } catch (error) {
-      console.error('Error saving finding:', error);
-      toast.error('Failed to save finding');
+      setSearchQuery('');
+      toast.success('Analysis complete');
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      toast.error('Analysis failed: ' + error.message);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const handleExportToCSV = () => {
-    const csvContent = messages
-      .map(msg => `"${msg.role}","${msg.content.replace(/"/g, '""')}","${msg.timestamp.toISOString()}"`)
-      .join('\n');
+  const handleExport = () => {
+    if (!currentAnalysis) return;
 
-    const blob = new Blob([`Role,Content,Timestamp\n${csvContent}`], { type: 'text/csv' });
+    const content = `Query: ${currentAnalysis.query}\n\nAnalysis:\n${currentAnalysis.answer}\n\nTimestamp: ${currentAnalysis.timestamp.toISOString()}`;
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ai-analysis-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `analysis-${Date.now()}.txt`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success('Conversation exported to CSV');
+    toast.success('Analysis exported');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const suggestedQuestions = DatabaseContextService.getSampleQueries().slice(0, 4);
+  const predefinedQueries = [
+    { icon: Target, label: 'High Priority Accounts', query: 'Show me accounts with settlement probability above 70%', color: 'rgb(139, 92, 246)' },
+    { icon: TrendingUp, label: 'Top Performers', query: 'Which clients have the highest predicted recovery amounts?', color: 'rgb(16, 185, 129)' },
+    { icon: Users, label: 'Action Analysis', query: 'Show accounts with low action intensity but high settlement probability', color: 'rgb(0, 171, 174)' },
+    { icon: DollarSign, label: 'Recovery Potential', query: 'What is the total predicted recovery amount by client?', color: 'rgb(245, 158, 11)' },
+    { icon: BarChart3, label: 'Portfolio Overview', query: 'Give me a breakdown of accounts by probability category', color: 'rgb(239, 68, 68)' },
+    { icon: Zap, label: 'Urgent Actions', query: 'Which accounts need urgent action today?', color: 'rgb(249, 115, 22)' }
+  ];
 
   return (
-    <div className="h-screen bg-white flex">
-      {/* Sidebar */}
-      {isSidebarOpen && (
-        <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <Button
-              onClick={createNewConversation}
-              className="w-full bg-[rgb(0,171,174)] hover:bg-[rgb(0,151,154)] text-white"
-              size="sm"
-            >
-              <Plus size={16} className="mr-2" />
-              New Chat
-            </Button>
-          </div>
-
-          <ScrollArea className="flex-1 p-2">
-            {conversations.map(conv => (
-              <button
-                key={conv.id}
-                onClick={() => loadConversationMessages(conv.id)}
-                className={`w-full text-left p-3 rounded-lg mb-1 hover:bg-gray-200 transition-colors ${
-                  currentConversationId === conv.id ? 'bg-gray-200' : ''
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <MessageSquare size={14} className="text-gray-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700 truncate">{conv.title}</span>
-                </div>
-                <span className="text-xs text-gray-400 ml-6">
-                  {new Date(conv.updated_at).toLocaleDateString()}
-                </span>
-              </button>
-            ))}
-          </ScrollArea>
-        </div>
-      )}
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="border-b border-gray-200 p-4 flex items-center justify-between bg-white">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <ArrowLeft size={20} className="text-gray-600" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-light text-gray-800 flex items-center gap-2">
-                <Sparkles size={20} className="text-[rgb(0,171,174)]" />
-                AI Predictive Analysis
-              </h1>
-              <p className="text-xs text-gray-500">Ask questions about your account data</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportToCSV}>
-              <Download size={16} className="mr-2" />
-              Export
-            </Button>
-          </div>
-        </div>
-
-        {/* Messages Area */}
-        <ScrollArea className="flex-1 p-6">
-          {messages.length === 0 ? (
-            <div className="max-w-3xl mx-auto mt-12">
-              <div className="text-center mb-12">
-                <div className="w-16 h-16 bg-gradient-to-br from-[rgb(0,171,174)] to-[rgb(0,151,154)] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Sparkles size={32} className="text-white" />
-                </div>
-                <h2 className="text-2xl font-light text-gray-800 mb-2">
-                  AI-Powered Predictive Analysis
-                </h2>
-                <p className="text-gray-600">
-                  Ask me anything about your accounts, predictions, and recovery strategies
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {suggestedQuestions.map((question, idx) => (
-                  <Card
-                    key={idx}
-                    className="cursor-pointer hover:shadow-md transition-shadow border-gray-200"
-                    onClick={() => setInputValue(question)}
-                  >
-                    <CardContent className="p-4">
-                      <p className="text-sm text-gray-700">{question}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="max-w-4xl mx-auto">
-              {messages.map(message => (
-                <div key={message.id}>
-                  <ChatMessage
-                    role={message.role}
-                    content={message.content}
-                    timestamp={message.timestamp}
-                    onSave={message.role === 'assistant' ? () => handleSaveFinding(message.id) : undefined}
-                    isSaved={message.isSaved}
-                  />
-                  {message.chartConfig && (
-                    <ChartRenderer config={message.chartConfig} />
-                  )}
-                </div>
-              ))}
-
-              {isLoading && (
-                <div className="flex gap-4 mb-6">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[rgb(0,171,174)] to-[rgb(0,151,154)] flex items-center justify-center">
-                    <Loader2 size={18} className="text-white animate-spin" />
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <span>Analyzing your data</span>
-                    <span className="animate-pulse">...</span>
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </ScrollArea>
-
-        {/* Input Area */}
-        <div className="border-t border-gray-200 p-4 bg-white">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex gap-3 items-end">
-              <Textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask me about your accounts, predictions, or recovery strategies..."
-                className="resize-none min-h-[60px] max-h-[200px] border-gray-300 focus:border-[rgb(0,171,174)] focus:ring-[rgb(0,171,174)]/20"
-                disabled={isLoading}
-              />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <Button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading}
-                className="bg-[rgb(0,171,174)] hover:bg-[rgb(0,151,154)] text-white h-[60px] px-6"
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="p-2 hover:bg-gray-100 rounded-full"
               >
-                {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                <ArrowLeft size={20} className="text-gray-600" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">AI Predictive Analytics</h1>
+                <p className="text-sm text-gray-500">Data-driven insights and portfolio analysis</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={loadQuickInsights}>
+                <RefreshCw size={16} className="mr-2" />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={!currentAnalysis}>
+                <Download size={16} className="mr-2" />
+                Export
               </Button>
             </div>
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Press Enter to send, Shift + Enter for new line
-            </p>
           </div>
         </div>
+      </div>
+
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        {/* Quick Insights */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickInsights.map((insight, idx) => (
+            <Card key={idx} className="border-gray-200 hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600 mb-1">{insight.title}</p>
+                    <p className="text-2xl font-bold text-gray-900 mb-1">{insight.value}</p>
+                    <div className="flex items-center gap-1">
+                      <Badge
+                        variant={insight.trend === 'up' ? 'default' : 'secondary'}
+                        className={`text-xs ${insight.trend === 'up' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                      >
+                        {insight.change}
+                      </Badge>
+                      <span className="text-xs text-gray-500">vs last period</span>
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${insight.color}20` }}>
+                    <insight.icon size={24} style={{ color: insight.color }} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Search Bar */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                  placeholder="Ask anything about your accounts, predictions, or recovery strategies..."
+                  className="pl-10 h-12 text-base border-gray-300 focus:border-[rgb(0,171,174)] focus:ring-[rgb(0,171,174)]/20"
+                  disabled={isAnalyzing}
+                />
+              </div>
+              <Button
+                onClick={handleAnalyze}
+                disabled={!searchQuery.trim() || isAnalyzing}
+                className="h-12 px-8 bg-[rgb(0,171,174)] hover:bg-[rgb(0,151,154)] text-white"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 size={20} className="mr-2 animate-spin" />
+                    Analyzing
+                  </>
+                ) : (
+                  <>
+                    <Zap size={20} className="mr-2" />
+                    Analyze
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick Analysis Templates</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {predefinedQueries.map((item, idx) => (
+              <Card
+                key={idx}
+                className="border-gray-200 hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => {
+                  setSearchQuery(item.query);
+                  setTimeout(() => handleAnalyze(), 100);
+                }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform"
+                      style={{ backgroundColor: `${item.color}20` }}
+                    >
+                      <item.icon size={20} style={{ color: item.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm">{item.label}</p>
+                      <p className="text-xs text-gray-500 truncate">{item.query}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Results Section */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="bg-white border border-gray-200">
+            <TabsTrigger value="analysis">Current Analysis</TabsTrigger>
+            <TabsTrigger value="history">Recent Analyses</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="analysis" className="space-y-4">
+            {currentAnalysis ? (
+              <>
+                <Card className="border-gray-200 shadow-sm">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-gray-900">Analysis Results</CardTitle>
+                        <CardDescription className="mt-1">
+                          Query: "{currentAnalysis.query}"
+                        </CardDescription>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {currentAnalysis.timestamp.toLocaleTimeString()}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose max-w-none">
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{currentAnalysis.answer}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {currentAnalysis.chartConfig && (
+                  <ChartRenderer config={currentAnalysis.chartConfig} />
+                )}
+              </>
+            ) : (
+              <Card className="border-gray-200 border-dashed">
+                <CardContent className="p-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <BarChart3 size={32} className="text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Analysis Yet</h3>
+                  <p className="text-gray-500 mb-4">
+                    Use the search bar above or click a quick action to start analyzing your data
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-3">
+            {analysisHistory.length > 0 ? (
+              analysisHistory.map((analysis) => (
+                <Card
+                  key={analysis.id}
+                  className="border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => {
+                    setCurrentAnalysis(analysis);
+                    setActiveTab('analysis');
+                  }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 mb-1 truncate">
+                          {analysis.query}
+                        </p>
+                        <p className="text-sm text-gray-600 line-clamp-2">{analysis.answer}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {analysis.chartConfig && (
+                          <Badge variant="secondary" className="text-xs">
+                            <PieChart size={12} className="mr-1" />
+                            Chart
+                          </Badge>
+                        )}
+                        <span className="text-xs text-gray-400">
+                          {analysis.timestamp.toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card className="border-gray-200 border-dashed">
+                <CardContent className="p-8 text-center">
+                  <LineChart size={32} className="text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">No analysis history yet</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
