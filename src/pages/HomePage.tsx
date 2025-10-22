@@ -110,7 +110,7 @@ export function HomePage() {
       boldWords: ['Account'],
       icon: BarChart3,
       color: 'rgb(139, 92, 246)',
-      onClick: () => handleCardClick('/enhanced-features', 'Enhanced Features', 'BarChart3', 'Analysis')
+      onClick: () => handleCardClick('/intelligence-center/ai-predictive-analysis', 'AI Predictive Analysis', 'BarChart3', 'Analysis')
     }
   ];
 

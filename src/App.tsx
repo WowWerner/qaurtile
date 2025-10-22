@@ -27,6 +27,7 @@ import { DemographicsAnalysisPage } from './pages/DemographicsAnalysisPage';
 import { LegalAnalysisPage } from './pages/LegalAnalysisPage';
 import { EnhancedFeaturesPage } from './pages/EnhancedFeaturesPage';
 import { AccountDetailsPage } from './pages/AccountDetailsPage';
+import { AIPredictiveAnalysisPage } from './pages/AIPredictiveAnalysisPage';
 import { GlobalSidebar } from './components/GlobalSidebar';
 import { usePageTracking } from './hooks/usePageTracking';
 import './App.css';
@@ -108,6 +109,11 @@ function App() {
         <Route path="/intelligence-center/legal-analysis" element={
           <ProtectedRoute requireSuperAdmin={true}>
             <LegalAnalysisPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/intelligence-center/ai-predictive-analysis" element={
+          <ProtectedRoute>
+            <AIPredictiveAnalysisPage />
           </ProtectedRoute>
         } />
         <Route path="/action-analysis" element={
