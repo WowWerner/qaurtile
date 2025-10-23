@@ -139,10 +139,20 @@ export class AIQueryProcessor {
       const response = await OpenAIService.chat([
         {
           role: 'system',
-          content: `You are a query planner for a Supabase database. Analyze the user's question and return a JSON query plan.
+          content: `You are a query planner for a debt collection database. Analyze the user's question and return a JSON query plan.
 
-Available tables:
+DATABASE CONTEXT:
 ${schema}
+
+IMPORTANT DATA FACTS:
+- prediction_score: Scale 1-10 (10=best, 1=worst). NOT 0-1!
+- HIGH category: prediction_score >= 7
+- MEDIUM category: prediction_score between 4-6
+- LOW category: prediction_score <= 3
+- 15,359 accounts across 24 clients
+- Common clients: "BODY CORPORATE COLLECTIONS", "FNB NAMIBIA", etc.
+- probability_category values: "HIGH", "MEDIUM", "LOW"
+- client_tier values: "High_Performer", "Medium_Performer", "Low_Performer"
 
 Return ONLY a JSON object with this structure:
 {
@@ -155,6 +165,47 @@ Return ONLY a JSON object with this structure:
   "description": "Human readable description of the query"
 }
 
+QUERY GUIDELINES:
+- Use "client_account_predictions" as the main table for account queries
+- For "high priority" or "high probability" → filter probability_category = "HIGH"
+- For score queries → use prediction_score (remember it's 1-10!)
+- For "top accounts" → order by prediction_score DESC
+- For debt amounts → use debt_amount column
+- Default limit: 10 (or 50 for visualizations)
+
+EXAMPLE QUERIES:
+
+User: "Show me top 10 accounts by prediction score"
+Response: {
+  "success": true,
+  "table": "client_account_predictions",
+  "columns": ["account_id", "client_name", "debt_amount", "prediction_score", "probability_category"],
+  "orderBy": {"column": "prediction_score", "ascending": false},
+  "limit": 10,
+  "description": "Top 10 accounts by prediction score"
+}
+
+User: "Show accounts with high settlement probability"
+Response: {
+  "success": true,
+  "table": "client_account_predictions",
+  "columns": ["account_id", "client_name", "debt_amount", "prediction_score", "probability_category"],
+  "filters": [{"column": "probability_category", "operator": "eq", "value": "HIGH"}],
+  "orderBy": {"column": "prediction_score", "ascending": false},
+  "limit": 50,
+  "description": "Accounts with high settlement probability"
+}
+
+User: "Show debt amounts by client"
+Response: {
+  "success": true,
+  "table": "client_account_predictions",
+  "columns": ["client_name", "debt_amount", "prediction_score"],
+  "orderBy": {"column": "debt_amount", "ascending": false},
+  "limit": 50,
+  "description": "Debt amounts by client"
+}
+
 Operators: eq, gt, lt, gte, lte, like, ilike
 If query is too complex, return {"success": false, "error": "reason"}`
         },
@@ -165,10 +216,14 @@ If query is too complex, return {"success": false, "error": "reason"}`
       ]);
 
       const cleaned = response.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      return JSON.parse(cleaned);
-    } catch (error) {
+      console.log('AI Query Plan Response:', cleaned);
+      const parsed = JSON.parse(cleaned);
+      console.log('Parsed Query Plan:', parsed);
+      return parsed;
+    } catch (error: any) {
       console.error('Query plan generation error:', error);
-      return { success: false, error: 'Failed to generate query plan' };
+      console.error('Raw response:', response?.content);
+      return { success: false, error: `Failed to generate query plan: ${error.message}` };
     }
   }
 
