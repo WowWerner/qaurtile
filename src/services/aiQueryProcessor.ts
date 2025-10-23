@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { OpenAIService } from './openaiService';
 import { DatabaseContextService } from './databaseContextService';
+import { AIChartService, AIChartConfiguration, ProgressCallback } from './aiChartService';
 
 export interface QueryResult {
   success: boolean;
@@ -13,20 +14,29 @@ export interface QueryResult {
 export interface AIAnalysisResult {
   answer: string;
   queryResult?: QueryResult;
-  chartConfig?: any;
+  chartConfig?: AIChartConfiguration | any;
   suggestions?: string[];
 }
 
 export class AIQueryProcessor {
-  static async processUserQuery(userMessage: string, conversationHistory: any[]): Promise<AIAnalysisResult> {
+  static async processUserQuery(
+    userMessage: string,
+    conversationHistory: any[],
+    onProgress?: ProgressCallback
+  ): Promise<AIAnalysisResult> {
     try {
+      onProgress?.('thinking', 'Quartile AI is thinking...', 0.1);
       const schema = DatabaseContextService.getFullSchema();
+
+      onProgress?.('context', 'Understanding context...', 0.2);
       const intent = await OpenAIService.analyzeQueryIntent(userMessage, schema);
 
       if (intent.needsDatabase) {
+        onProgress?.('querying', 'Querying database...', 0.4);
         const queryResult = await this.executeQuery(userMessage, schema);
 
         if (queryResult.success && queryResult.data) {
+          onProgress?.('generating', 'Generating insights...', 0.6);
           const answer = await this.generateAnswerFromData(
             userMessage,
             queryResult.data
@@ -34,11 +44,19 @@ export class AIQueryProcessor {
 
           let chartConfig = null;
           if (intent.needsVisualization && queryResult.data.length > 0) {
-            chartConfig = this.generateChartConfig(
+            onProgress?.('visualizing', 'Creating visualization...', 0.75);
+            chartConfig = await AIChartService.generateChartConfiguration(
               queryResult.data,
-              intent.visualizationType || 'bar'
+              userMessage,
+              onProgress
             );
+
+            if (!chartConfig) {
+              chartConfig = AIChartService.getFallbackConfiguration(queryResult.data);
+            }
           }
+
+          onProgress?.('finalizing', 'Finalizing results...', 0.95);
 
           return {
             answer,
@@ -237,30 +255,6 @@ Please provide an insightful answer.`
     return response.content;
   }
 
-  private static generateChartConfig(data: any[], chartType: string): any {
-    if (data.length === 0) return null;
-
-    const firstRow = data[0];
-    const keys = Object.keys(firstRow);
-
-    const numericKeys = keys.filter(key =>
-      typeof firstRow[key] === 'number' && key !== 'id'
-    );
-    const labelKeys = keys.filter(key =>
-      typeof firstRow[key] === 'string' && data.length <= 50
-    );
-
-    const labelKey = labelKeys[0] || keys[0];
-    const valueKeys = numericKeys.slice(0, 3);
-
-    return {
-      type: chartType,
-      data: data.slice(0, 50),
-      labelKey,
-      valueKeys,
-      colors: ['#00ABAE', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444']
-    };
-  }
 
   private static generateSuggestions(data: any[]): string[] {
     const suggestions = [

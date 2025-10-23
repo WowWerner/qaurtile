@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Users, DollarSign, Target, Search, Loader2, Download, RefreshCw, Zap, BarChart3, PieChart, LineChart } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, DollarSign, Target, Search, Download, RefreshCw, Zap, BarChart3, PieChart, LineChart } from 'lucide-react';
+import { AIProgressIndicator, ProgressStage } from '../components/ai/AIProgressIndicator';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
@@ -38,6 +39,8 @@ export function AIPredictiveAnalysisPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [progressStage, setProgressStage] = useState<ProgressStage>('thinking');
+  const [progressMessage, setProgressMessage] = useState<string>('');
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const [quickInsights, setQuickInsights] = useState<QuickInsight[]>([]);
@@ -138,9 +141,17 @@ export function AIPredictiveAnalysisPage() {
 
     setIsAnalyzing(true);
     setActiveTab('analysis');
+    setProgressStage('thinking');
 
     try {
-      const result = await AIQueryProcessor.processUserQuery(searchQuery, []);
+      const result = await AIQueryProcessor.processUserQuery(
+        searchQuery,
+        [],
+        (stage, message) => {
+          setProgressStage(stage as ProgressStage);
+          setProgressMessage(message);
+        }
+      );
 
       const newAnalysis: AnalysisResult = {
         id: Date.now().toString(),
@@ -300,17 +311,8 @@ export function AIPredictiveAnalysisPage() {
                 disabled={!searchQuery.trim() || isAnalyzing}
                 className="h-12 px-8 bg-[rgb(0,171,174)] hover:bg-[rgb(0,151,154)] text-white"
               >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 size={20} className="mr-2 animate-spin" />
-                    Analyzing
-                  </>
-                ) : (
-                  <>
-                    <Zap size={20} className="mr-2" />
-                    Analyze
-                  </>
-                )}
+                <Zap size={20} className="mr-2" />
+                {isAnalyzing ? 'Analyzing' : 'Analyze'}
               </Button>
             </div>
           </CardContent>
@@ -356,7 +358,13 @@ export function AIPredictiveAnalysisPage() {
           </TabsList>
 
           <TabsContent value="analysis" className="space-y-4">
-            {currentAnalysis ? (
+            {isAnalyzing ? (
+              <AIProgressIndicator
+                stage={progressStage}
+                customMessage={progressMessage}
+                size="lg"
+              />
+            ) : currentAnalysis ? (
               <>
                 <Card className="border-gray-200 shadow-sm">
                   <CardHeader>

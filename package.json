@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.53",
     "@googlemaps/js-api-loader": "^1.16.10",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@hookform/resolvers": "^3.9.0",
@@ -42,6 +43,7 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
     "@supabase/supabase-js": "^2.56.1",
+    "ai": "^5.0.76",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -62,7 +64,7 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.0.0",
-    "zod": "^3.23.8"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
