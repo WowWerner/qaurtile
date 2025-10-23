@@ -422,7 +422,34 @@ export class SupabaseService {
 
   // Helper method to parse amount strings
   private static parseAmount(amountStr: string | number): number {
-    if (typeof amountStr === 'number') return amountStr;
-    return parseFloat(amountStr.replace(/[N$,\s]/g, '')) || 0;
+    if (typeof amountStr === 'number') {
+      // Sanity check for numbers too
+      if (amountStr < 0 || amountStr > 1000000000 || isNaN(amountStr)) {
+        console.warn(`Invalid numeric amount: ${amountStr}`);
+        return 0;
+      }
+      return amountStr;
+    }
+
+    // Remove currency symbols, spaces, and commas
+    const cleaned = amountStr.replace(/[N$,\s]/g, '');
+
+    // Check if this looks like a date (contains slashes, dashes, or is suspiciously long)
+    if (cleaned.includes('/') || cleaned.includes('-') || cleaned.length > 15) {
+      console.warn(`Invalid amount string detected (possibly a date): ${amountStr}`);
+      return 0;
+    }
+
+    // Parse the numeric value
+    const numeric = cleaned.replace(/[^\d.-]/g, '');
+    const num = parseFloat(numeric);
+
+    // Sanity check: amounts should be reasonable
+    if (isNaN(num) || num < 0 || num > 1000000000) {
+      console.warn(`Invalid or unreasonable amount: ${amountStr} -> ${num}`);
+      return 0;
+    }
+
+    return num;
   }
 }

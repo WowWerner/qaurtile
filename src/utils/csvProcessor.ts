@@ -89,9 +89,27 @@ export interface AnalysisResults {
 // Helper function to safely get numeric value
 function getNumericValue(value: string | undefined): number {
   if (!value || value.trim() === '') return 0;
-  const cleaned = value.replace(/[N$,\s]/g, '').replace(/[^\d.-]/g, '');
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+
+  // Remove currency symbols, spaces, and commas
+  const cleaned = value.replace(/[N$,\s]/g, '');
+
+  // Check if this looks like a date (contains multiple slashes or dashes, or is too long)
+  if (cleaned.includes('/') || cleaned.includes('-') || cleaned.length > 15) {
+    console.warn(`Invalid amount value detected (possibly a date): ${value}`);
+    return 0;
+  }
+
+  // Remove all non-numeric characters except dot and minus
+  const numeric = cleaned.replace(/[^\d.-]/g, '');
+  const num = parseFloat(numeric);
+
+  // Sanity check: amounts should be reasonable (< 1 billion)
+  if (isNaN(num) || num < 0 || num > 1000000000) {
+    console.warn(`Invalid or unreasonable amount value: ${value} -> ${num}`);
+    return 0;
+  }
+
+  return num;
 }
 
 // Helper function to check if contact info is valid
