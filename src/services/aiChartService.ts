@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { ChartCacheService } from './chartCacheService';
+import { DatabaseContextService } from './databaseContextService';
 
 const openai = createOpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -104,12 +105,19 @@ export class AIChartService {
       });
       const stringKeys = dataKeys.filter(key => typeof data[0][key] === 'string');
 
+      const dataStatistics = this.calculateDataStatistics(data, numericKeys);
+      const databaseSchema = DatabaseContextService.getFullSchema();
+      const dataCharacteristics = await this.analyzeDataCharacteristics(data);
+
       onProgress?.('generating', 'Creating optimal visualization...', 0.5);
 
       const { object } = await generateObject({
         model: openai('gpt-4o-mini'),
         schema: ChartConfigurationSchema,
-        prompt: `You are a data visualization expert. Analyze the following data and generate an optimal chart configuration.
+        prompt: `You are a data visualization expert specializing in debt collection analytics.
+
+DATABASE CONTEXT (understand what each field means):
+${databaseSchema}
 
 User Query: "${userQuery}"
 
@@ -122,19 +130,46 @@ Available Fields:
 
 Total rows: ${data.length}
 
-Instructions:
-1. Select the most appropriate chart type based on the data characteristics and user query
-2. Choose meaningful axis labels and appropriate formatting
-3. Select a professional color scheme (use Quartile brand color #00ABAE as primary)
-4. Identify 2-3 key insights from the data patterns
-5. Provide a clear, descriptive title
-6. Recommend an action if applicable
+Data Statistics:
+${dataStatistics}
 
-IMPORTANT:
-- For settlement/probability data, use colors: #10B981 (green) for high, #F59E0B (orange) for medium, #EF4444 (red) for low
-- For financial data, use currency format with $ symbol
-- For percentages, use percentage format with % symbol
-- Limit data to 50 points max for readability`,
+Data Characteristics:
+- Has time series: ${dataCharacteristics.hasTimeSeries}
+- Has categorical data: ${dataCharacteristics.hasCategorical}
+- Multiple numeric series: ${dataCharacteristics.hasMultipleSeries}
+- Complexity: ${dataCharacteristics.dataComplexity}
+
+INSTRUCTIONS:
+1. Use the database context above to understand what each field means
+2. Create business-meaningful axis labels:
+   - "Settlement Probability" not "settlement_probability"
+   - "Predicted Recovery Amount" not "predicted_recovery"
+   - "Prediction Score (1-10)" not just "prediction_score"
+3. Format values correctly based on field type:
+   - Currency ($): debt_amount, initial_value, predicted_recovery, total_recovered
+   - Plain Number: prediction_score (1-10 scale, NOT percentage!)
+   - Percentage (%): settlement_probability (0-1), settlement_rate
+4. Use appropriate colors:
+   - Quartile brand: #00ABAE (primary)
+   - HIGH/High_Performer: #10B981 (green)
+   - MEDIUM/Medium_Performer: #F59E0B (orange)
+   - LOW/Low_Performer: #EF4444 (red)
+5. Generate actionable insights about:
+   - Settlement opportunities
+   - Recovery potential
+   - Account priorities
+   - Performance patterns
+6. Provide clear, business-focused titles like:
+   - Good: "High-Priority Accounts by Prediction Score"
+   - Bad: "prediction_score chart"
+
+CRITICAL: prediction_score is 1-10 (NOT 0-1, NOT percentage)
+- 10 = Highest priority
+- 7-10 = HIGH category
+- 4-6 = MEDIUM
+- 1-3 = LOW
+
+Limit data to 50 points max for readability.`,
       });
 
       onProgress?.('finalizing', 'Finalizing visualization...', 0.9);
@@ -182,6 +217,27 @@ IMPORTANT:
       showGrid: true,
       dataLimit: 50,
     };
+  }
+
+  static calculateDataStatistics(data: any[], numericKeys: string[]): string {
+    const stats: string[] = [];
+
+    for (const key of numericKeys.slice(0, 5)) {
+      const values = data.map(row => {
+        const val = row[key];
+        return typeof val === 'number' ? val : parseFloat(val);
+      }).filter(v => !isNaN(v));
+
+      if (values.length === 0) continue;
+
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+      stats.push(`  - ${key}: min=${min.toFixed(2)}, max=${max.toFixed(2)}, avg=${avg.toFixed(2)}`);
+    }
+
+    return stats.length > 0 ? stats.join('\n') : '  No numeric statistics available';
   }
 
   static async analyzeDataCharacteristics(data: any[]): Promise<{

@@ -22,19 +22,32 @@ PRIMARY TABLES (HIGHEST PRIORITY):
    - recommended_actions (text): AI-recommended next actions
    - predicted_recovery (numeric): Predicted recovery amount
 
-2. client_account_predictions
+2. client_account_predictions (15,359 accounts across 24 clients)
    - account_id (integer): Account identifier
    - client_id (integer): Client identifier
-   - client_name (text): Client name
+   - client_name (text): Client name (e.g., "BODY CORPORATE COLLECTIONS", "FNB NAMIBIA", "DEVELOPMENT BANK OF NAMIBIA")
    - client_debtor_id (text): Debtor ID in client's system
-   - debt_amount (numeric): Current debt amount
+   - debt_amount (numeric): Current debt amount (range: $0 - $7.8M, avg: $19,810)
    - hand_over_date (date): Date account was handed over
    - days_since_handover (integer): Days since handover
-   - prediction_score (numeric): AI prediction score (0-10)
-   - probability_category (text): HIGH, MEDIUM, or LOW
+   - prediction_score (numeric): AI prediction score (IMPORTANT: Scale 1-10, where 10=highest, 1=lowest. NOT 0-1!)
+   - probability_category (text): HIGH, MEDIUM, or LOW (categories based on prediction_score)
    - next_action (text): Recommended next action
    - action_priority (text): URGENT, HIGH, or NORMAL
    - action_timeframe (text): Timeframe for action
+   - phone_call_count (integer): Number of phone calls made
+   - letter_count (integer): Number of letters sent
+   - email_count (integer): Number of emails sent
+   - total_communications (integer): Total contact attempts
+   - promise_to_pay_count (integer): Number of payment promises
+   - client_tier (text): High_Performer, Medium_Performer, or Low_Performer
+
+CRITICAL DATA RANGES TO UNDERSTAND:
+- prediction_score: 1-10 scale (NOT percentage, NOT 0-1. 10 is best, 1 is worst)
+- debt_amount: $0 to $7.8M (average around $20K)
+- Probability categories: HIGH (score 7-10), MEDIUM (score 4-6), LOW (score 1-3)
+- 24 different clients in the system
+- Average days since handover: varies widely
 `;
   }
 
