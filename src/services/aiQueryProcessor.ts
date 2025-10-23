@@ -169,18 +169,29 @@ Return ONLY a JSON object with this structure:
   "description": "Human readable description of the query"
 }
 
+REAL DATA CONTEXT:
+- 15,359 total accounts across 24 clients
+- Scores: 1-10 scale (avg 2.38, most are LOW)
+- Only 24 HIGH probability accounts (very rare!)
+- Only 14 URGENT accounts (all score 10)
+- 589 HIGH priority accounts (avg score 5.35)
+- Top clients: Telecom Namibia (11,436), TN Mobile (1,899), NIDA (1,216)
+- Debt range: $0 to $7.8M, average $19,810
+
 QUERY GUIDELINES:
-- Use "client_account_predictions" as the main table for account queries
-- For "high priority" or "high probability" → filter probability_category = "HIGH"
-- For score queries → use prediction_score (remember it's 1-10!)
+- Use "client_account_predictions" as main table
+- For "high priority/probability" → filter probability_category = "HIGH" (24 accounts only!)
+- For "urgent" → filter action_priority = "URGENT" (14 accounts, all score 10)
+- For "medium" → filter probability_category = "MEDIUM" (756 accounts)
+- For score queries → use prediction_score (1-10 scale)
 - For "top accounts" → order by prediction_score DESC
-- For debt amounts → use debt_amount column
-- Default limit: 10 (or 50 for visualizations)
+- For specific clients → use exact names: "Telecom Namibia Limited", "TN Mobile", "NIDA", "MTC NAMIBIA", etc.
+- Default limits: 10 for simple, 50 for filtered, 100 for client-specific
 
 EXAMPLE QUERIES:
 
-User: "Show me top 10 accounts by prediction score"
-Response: {
+Example 1: "Show me top 10 accounts by prediction score"
+{
   "success": true,
   "table": "client_account_predictions",
   "columns": ["account_id", "client_name", "debt_amount", "prediction_score", "probability_category"],
@@ -189,25 +200,37 @@ Response: {
   "description": "Top 10 accounts by prediction score"
 }
 
-User: "Show accounts with high settlement probability"
-Response: {
+Example 2: "Show URGENT accounts"
+{
+  "success": true,
+  "table": "client_account_predictions",
+  "columns": ["account_id", "client_name", "debt_amount", "prediction_score", "action_priority", "next_action"],
+  "filters": [{"column": "action_priority", "operator": "eq", "value": "URGENT"}],
+  "orderBy": {"column": "debt_amount", "ascending": false},
+  "limit": 50,
+  "description": "Urgent priority accounts"
+}
+
+Example 3: "Show HIGH probability accounts"
+{
   "success": true,
   "table": "client_account_predictions",
   "columns": ["account_id", "client_name", "debt_amount", "prediction_score", "probability_category"],
   "filters": [{"column": "probability_category", "operator": "eq", "value": "HIGH"}],
   "orderBy": {"column": "prediction_score", "ascending": false},
   "limit": 50,
-  "description": "Accounts with high settlement probability"
+  "description": "High probability accounts"
 }
 
-User: "Show debt amounts by client"
-Response: {
+Example 4: "Show Telecom Namibia accounts"
+{
   "success": true,
   "table": "client_account_predictions",
-  "columns": ["client_name", "debt_amount", "prediction_score"],
-  "orderBy": {"column": "debt_amount", "ascending": false},
-  "limit": 50,
-  "description": "Debt amounts by client"
+  "columns": ["account_id", "client_name", "debt_amount", "prediction_score"],
+  "filters": [{"column": "client_name", "operator": "eq", "value": "Telecom Namibia Limited"}],
+  "orderBy": {"column": "prediction_score", "ascending": false},
+  "limit": 100,
+  "description": "Telecom Namibia Limited accounts"
 }
 
 Operators: eq, gt, lt, gte, lte, like, ilike
