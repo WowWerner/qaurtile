@@ -145,7 +145,7 @@ export function IntelligenceCenterPage() {
     }
 
     if (headerMappings.length === 0) {
-      alert('Please complete header mapping first');
+      alert('Please map at least one field before analyzing');
       return;
     }
 

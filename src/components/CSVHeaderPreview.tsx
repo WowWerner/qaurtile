@@ -127,7 +127,8 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
   };
 
   const handleConfirm = () => {
-    if (validation.isValid) {
+    // Allow proceeding if at least one field is mapped
+    if (finalMappings.length > 0) {
       onMappingComplete(finalMappings);
     }
   };
@@ -158,11 +159,11 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
               </div>
               <div className="text-sm text-orange-600">Unmapped</div>
             </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-medium text-red-700">
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-2xl font-medium text-orange-700">
                 {mappingResult.missingRequiredFields.length}
               </div>
-              <div className="text-sm text-red-600">Missing Required</div>
+              <div className="text-sm text-orange-600">Missing Recommended</div>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-medium text-blue-700">
@@ -377,40 +378,68 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
         </Card>
       )}
 
-      {/* Missing Required Fields */}
+      {/* Missing Required Fields - Now a Warning instead of Error */}
       {mappingResult.missingRequiredFields.length > 0 && (
-        <Card className="border-red-200 bg-red-50/30">
+        <Card className="border-orange-200 bg-orange-50/30">
           <CardHeader>
-            <CardTitle className="text-lg font-light text-red-800">
-              Missing Required Fields
+            <CardTitle className="text-lg font-light text-orange-800 flex items-center space-x-2">
+              <AlertTriangle size={20} />
+              <span>Missing Recommended Fields</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="text-sm text-orange-700 mb-4">
+              The following fields are recommended for optimal analysis. You can still proceed without them, but some features may be limited.
+            </p>
             <div className="space-y-2">
               {mappingResult.missingRequiredFields.map((field, index) => (
-                <div key={index} className="flex items-center space-x-2 p-3 bg-white rounded-lg border border-red-200">
-                  <X size={16} className="text-red-600" />
-                  <span className="text-sm font-medium text-red-700">{field}</span>
-                  <span className="text-sm text-gray-500">- Required for analysis</span>
+                <div key={index} className="flex items-center space-x-2 p-3 bg-white rounded-lg border border-orange-200">
+                  <AlertTriangle size={16} className="text-orange-600" />
+                  <span className="text-sm font-medium text-orange-700">{field}</span>
+                  <span className="text-sm text-gray-500">- Recommended for full analysis</span>
                 </div>
               ))}
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-700">
+                <strong>What you can still do:</strong> Analyze available data, view statistics, generate insights based on mapped fields.
+              </p>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-end space-x-4">
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          disabled={!validation.isValid}
-          className="bg-[rgb(0,171,174)] hover:bg-[rgb(0,151,154)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {validation.isValid ? 'Confirm Mapping & Continue' : 'Fix Errors to Continue'}
-        </Button>
+      <div className="flex justify-between items-center">
+        <div>
+          {!validation.isValid && finalMappings.length > 0 && (
+            <p className="text-sm text-orange-600 flex items-center space-x-2">
+              <AlertTriangle size={16} />
+              <span>Some fields are not mapped. You can still analyze with available data.</span>
+            </p>
+          )}
+        </div>
+        <div className="flex space-x-4">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          {!validation.isValid && finalMappings.length > 0 && (
+            <Button
+              onClick={handleConfirm}
+              variant="outline"
+              className="border-orange-500 text-orange-700 hover:bg-orange-50"
+            >
+              Analyze with Partial Mapping
+            </Button>
+          )}
+          <Button
+            onClick={handleConfirm}
+            disabled={finalMappings.length === 0}
+            className="bg-[rgb(0,171,174)] hover:bg-[rgb(0,151,154)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {validation.isValid ? 'Confirm Mapping & Continue' : finalMappings.length > 0 ? 'Analyze Anyway' : 'Map at Least One Field'}
+          </Button>
+        </div>
       </div>
     </div>
   );
