@@ -111,10 +111,18 @@ export class AIChartService {
 
       onProgress?.('generating', 'Creating optimal visualization...', 0.5);
 
+      console.log('=== GENERATING CHART CONFIGURATION ===');
+      console.log('User Query:', userQuery);
+      console.log('Data rows:', data.length);
+      console.log('Data keys:', dataKeys);
+
       const { object } = await generateObject({
-        model: openai('gpt-4o-mini'),
+        model: openai('gpt-4-turbo'),
         schema: ChartConfigurationSchema,
         prompt: `You are a data visualization expert specializing in debt collection analytics.
+
+Generate a structured JSON chart configuration. Do not refuse or say you cannot generate charts.
+You MUST return valid JSON matching the schema provided.
 
 DATABASE CONTEXT (understand what each field means):
 ${databaseSchema}
@@ -176,12 +184,23 @@ Limit data to 50 points max for readability.`,
 
       const configuration = object as AIChartConfiguration;
 
+      console.log('Chart configuration generated successfully');
+      console.log('Chart type:', configuration.type);
+      console.log('Chart title:', configuration.metadata.title);
+
       await ChartCacheService.cacheConfiguration(userQuery, data, configuration);
 
       return configuration;
-    } catch (error) {
-      console.error('AI chart generation error:', error);
-      return null;
+    } catch (error: any) {
+      console.error('=== AI CHART GENERATION ERROR ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error);
+
+      // If structured generation fails, use fallback
+      console.log('Using fallback chart configuration');
+      onProgress?.('finalizing', 'Using default visualization...', 0.9);
+      return this.getFallbackConfiguration(data);
     }
   }
 

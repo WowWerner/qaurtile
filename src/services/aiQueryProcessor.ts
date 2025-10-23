@@ -44,14 +44,20 @@ export class AIQueryProcessor {
 
           let chartConfig = null;
           if (intent.needsVisualization && queryResult.data.length > 0) {
-            onProgress?.('visualizing', 'Creating visualization...', 0.75);
-            chartConfig = await AIChartService.generateChartConfiguration(
-              queryResult.data,
-              userMessage,
-              onProgress
-            );
+            try {
+              onProgress?.('visualizing', 'Creating visualization...', 0.75);
+              chartConfig = await AIChartService.generateChartConfiguration(
+                queryResult.data,
+                userMessage,
+                onProgress
+              );
 
-            if (!chartConfig) {
+              if (!chartConfig) {
+                console.log('Chart generation returned null, using fallback');
+                chartConfig = AIChartService.getFallbackConfiguration(queryResult.data);
+              }
+            } catch (chartError: any) {
+              console.error('Chart generation failed, using fallback:', chartError.message);
               chartConfig = AIChartService.getFallbackConfiguration(queryResult.data);
             }
           }
