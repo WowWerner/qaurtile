@@ -136,6 +136,10 @@ export class AIQueryProcessor {
 
   private static async generateQueryPlan(userQuery: string, schema: string): Promise<any> {
     try {
+      console.log('=== GENERATING QUERY PLAN ===');
+      console.log('User Query:', userQuery);
+      console.log('Schema length:', schema.length);
+
       const response = await OpenAIService.chat([
         {
           role: 'system',
@@ -215,15 +219,31 @@ If query is too complex, return {"success": false, "error": "reason"}`
         }
       ]);
 
+      console.log('OpenAI Response received');
+      console.log('Response content:', response.content);
+
       const cleaned = response.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      console.log('AI Query Plan Response:', cleaned);
+      console.log('Cleaned response:', cleaned);
+
       const parsed = JSON.parse(cleaned);
-      console.log('Parsed Query Plan:', parsed);
+      console.log('Parsed Query Plan:', JSON.stringify(parsed, null, 2));
+
       return parsed;
     } catch (error: any) {
-      console.error('Query plan generation error:', error);
-      console.error('Raw response:', response?.content);
-      return { success: false, error: `Failed to generate query plan: ${error.message}` };
+      console.error('=== QUERY PLAN GENERATION ERROR ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+
+      if (error.response) {
+        console.error('API Response Status:', error.response.status);
+        console.error('API Response Data:', error.response.data);
+      }
+
+      return {
+        success: false,
+        error: `Query plan failed: ${error.message || 'Unknown error'}`
+      };
     }
   }
 

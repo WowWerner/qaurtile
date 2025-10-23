@@ -2,7 +2,9 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
+  dangerouslyAllowBrowser: true,
+  timeout: 60000, // 60 seconds
+  maxRetries: 2
 });
 
 export interface ChatMessage {
@@ -20,6 +22,11 @@ export interface AIResponse {
 export class OpenAIService {
   static async chat(messages: ChatMessage[]): Promise<AIResponse> {
     try {
+      console.log('=== CALLING OPENAI API ===');
+      console.log('Model: gpt-4-turbo-preview');
+      console.log('Message count:', messages.length);
+      console.log('First message role:', messages[0]?.role);
+
       const response = await openai.chat.completions.create({
         model: 'gpt-4-turbo-preview',
         messages: messages,
@@ -27,14 +34,25 @@ export class OpenAIService {
         max_tokens: 2000,
       });
 
+      console.log('OpenAI API call successful');
       const content = response.choices[0]?.message?.content || '';
+      console.log('Response content length:', content.length);
 
       return {
         content,
         needsVisualization: false,
       };
     } catch (error: any) {
-      console.error('OpenAI API Error:', error);
+      console.error('=== OPENAI API ERROR ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error status:', error.status);
+
+      if (error.error) {
+        console.error('OpenAI Error Details:', error.error);
+      }
+
       throw new Error(error.message || 'Failed to get AI response');
     }
   }
