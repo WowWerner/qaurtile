@@ -1,41 +1,26 @@
 import { AnalysisResults, ProcessedDebtor, DebtorRecord } from './csvProcessor';
 import { normalizeHeader, createMappingDictionary, type FieldMapping } from './headerMapper';
-import * as XLSX from 'xlsx';
 
-// Parse CSV or Excel with custom field mappings
+// Parse CSV with custom field mappings
 export async function parseCSVWithMapping(
   file: File,
   mappings: FieldMapping[]
 ): Promise<{ rawData: any[]; analysisResults: AnalysisResults; headers: string[] }> {
   return new Promise((resolve, reject) => {
-    console.log('Starting enhanced file parsing with custom mappings');
+    console.log('Starting enhanced CSV parsing with custom mappings');
     const reader = new FileReader();
 
     reader.onload = (e) => {
       try {
-        const fileExtension = file.name.split('.').pop()?.toLowerCase();
-        let csvContent: string;
-
-        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-          // Parse Excel file
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          csvContent = XLSX.utils.sheet_to_csv(worksheet);
-        } else {
-          // Parse CSV file
-          csvContent = e.target?.result as string;
-        }
-
+        const csvContent = e.target?.result as string;
         const result = processCSVContent(csvContent, mappings);
         resolve(result);
       } catch (error) {
-        console.error('File processing error:', error);
+        console.error('CSV processing error:', error);
         if (error instanceof Error) {
-          reject(new Error(`Failed to parse file: ${error.message}`));
+          reject(new Error(`Failed to parse CSV file: ${error.message}`));
         } else {
-          reject(new Error('Failed to parse file: Unknown parsing error'));
+          reject(new Error('Failed to parse CSV file: Unknown parsing error'));
         }
       }
     };
@@ -49,12 +34,7 @@ export async function parseCSVWithMapping(
       reject(new Error('File reading timeout - file may be too large'));
     }, 60000); // 60 second timeout
 
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-      reader.readAsArrayBuffer(file);
-    } else {
-      reader.readAsText(file);
-    }
+    reader.readAsText(file);
   });
 }
 
