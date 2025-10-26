@@ -14,6 +14,7 @@ import { mapHeaders, type FieldMapping } from '../utils/headerMapper';
 import { CSVHeaderPreview } from '../components/CSVHeaderPreview';
 import { CSVTemplateGenerator } from '../components/CSVTemplateGenerator';
 import { SupabaseService } from '../utils/supabaseService';
+import * as XLSX from 'xlsx';
 
 export function IntelligenceCenterPage() {
   const navigate = useNavigate();
@@ -85,14 +86,13 @@ export function IntelligenceCenterPage() {
       // Read file to preview headers
       try {
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = (e) => {
           try {
             const fileExtension = file.name.split('.').pop()?.toLowerCase();
             let content: string;
 
             if (fileExtension === 'xlsx' || fileExtension === 'xls') {
               // Parse Excel file
-              const XLSX = await import('xlsx');
               const data = new Uint8Array(e.target?.result as ArrayBuffer);
               const workbook = XLSX.read(data, { type: 'array' });
               const firstSheetName = workbook.SheetNames[0];
