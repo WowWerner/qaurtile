@@ -226,28 +226,40 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
               const availableFields = getAvailableFields(header);
 
               return (
-                <div key={index} className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center space-x-2 flex-1">
-                    {getConfidenceIcon(effectiveMapping.confidence)}
-
-                    <div className="flex-1">
+                <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Left Side - CSV Column */}
+                    <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-900">{header}</span>
+                        {getConfidenceIcon(effectiveMapping.confidence)}
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">CSV Column</span>
                         {isCustom && (
                           <Badge variant="outline" className="text-xs">Custom</Badge>
                         )}
                       </div>
-
+                      <div className="font-medium text-gray-900 text-sm break-words">
+                        {header}
+                      </div>
                       {showDetails && sampleRow && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Sample: {sampleRow[header] || 'N/A'}
+                        <div className="text-xs text-gray-500 bg-white p-2 rounded border border-gray-200">
+                          <span className="font-medium">Sample:</span> {sampleRow[header] || 'N/A'}
                         </div>
                       )}
                     </div>
 
-                    <span className="text-gray-400">→</span>
-
-                    <div className="flex-1">
+                    {/* Right Side - System Field */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Maps To</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveMapping(header)}
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X size={14} />
+                        </Button>
+                      </div>
                       <Select
                         value={effectiveMapping.internalField}
                         onValueChange={(value) => handleChangeMapping(header, value)}
@@ -272,23 +284,12 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
                       </Select>
 
                       {showDetails && (
-                        <div className="mt-1">
-                          <Badge className={`text-xs ${getConfidenceColor(effectiveMapping.confidence)}`}>
-                            {(effectiveMapping.confidence * 100).toFixed(0)}% confidence
-                          </Badge>
-                        </div>
+                        <Badge className={`text-xs ${getConfidenceColor(effectiveMapping.confidence)}`}>
+                          {(effectiveMapping.confidence * 100).toFixed(0)}% confidence
+                        </Badge>
                       )}
                     </div>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveMapping(header)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <X size={16} />
-                  </Button>
                 </div>
               );
             })}
@@ -320,20 +321,25 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
                   const availableFields = getAvailableFields(header);
 
                   return (
-                    <div key={index} className="flex items-center space-x-3 p-4 bg-white rounded-lg border border-orange-200">
-                      <HelpCircle size={16} className="text-orange-600 flex-shrink-0" />
-
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900">{header}</div>
-                        {sampleRow && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            Sample: {sampleRow[header] || 'N/A'}
+                    <div key={index} className="p-4 bg-white rounded-lg border border-orange-200">
+                      <div className="space-y-3">
+                        {/* Header Section */}
+                        <div className="flex items-start space-x-2">
+                          <HelpCircle size={16} className="text-orange-600 flex-shrink-0 mt-1" />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 break-words">{header}</div>
+                            {sampleRow && (
+                              <div className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded">
+                                <span className="font-medium">Sample:</span> {sampleRow[header] || 'N/A'}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
 
+                        {/* Suggestions Section */}
                         {suggestion && suggestion.suggestions.length > 0 && (
-                          <div className="mt-2">
-                            <div className="text-xs text-gray-600 mb-1">Suggestions:</div>
+                          <div className="space-y-2">
+                            <div className="text-xs text-gray-600 font-medium">Suggested Mappings:</div>
                             <div className="flex flex-wrap gap-2">
                               {suggestion.suggestions.map((sug, i) => {
                                 const fieldDef = getFieldDefinition(sug.field);
@@ -343,7 +349,7 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleManualMapping(header, sug.field)}
-                                    className="text-xs"
+                                    className="text-xs hover:bg-[rgb(0,171,174)] hover:text-white hover:border-[rgb(0,171,174)]"
                                   >
                                     {fieldDef?.displayName || sug.field}
                                     <Badge variant="outline" className="ml-2 text-xs">
@@ -355,25 +361,29 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
                             </div>
                           </div>
                         )}
-                      </div>
 
-                      <Select onValueChange={(value) => handleManualMapping(header, value)}>
-                        <SelectTrigger className="w-64 bg-white">
-                          <SelectValue placeholder="Select field..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableFields.map((field) => (
-                            <SelectItem key={field.internalField} value={field.internalField}>
-                              <div className="flex items-center justify-between w-full">
-                                <span>{field.displayName}</span>
-                                {field.required && (
-                                  <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {/* Manual Selection Section */}
+                        <div className="space-y-1">
+                          <div className="text-xs text-gray-600 font-medium">Or select manually:</div>
+                          <Select onValueChange={(value) => handleManualMapping(header, value)}>
+                            <SelectTrigger className="w-full bg-white">
+                              <SelectValue placeholder="Select field to map..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableFields.map((field) => (
+                                <SelectItem key={field.internalField} value={field.internalField}>
+                                  <div className="flex items-center justify-between w-full">
+                                    <span>{field.displayName}</span>
+                                    {field.required && (
+                                      <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}

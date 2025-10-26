@@ -7,7 +7,7 @@ export class SupabaseService {
   static async saveCsvAnalysis(filename: string, results: AnalysisResults): Promise<string> {
     console.log('SupabaseService.saveCsvAnalysis is deprecated. Use saveRawCsvData and processRawData instead.');
     // Keep for backward compatibility but should not be used in new multi-step process
-    return this.saveRawCsvDataAndProcess(filename, results);
+    return this.saveRawCsvDataAndProcess(filename, '', results);
   }
 
   // Step 1: Save raw CSV data to database
