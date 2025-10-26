@@ -72,7 +72,11 @@ export function IntelligenceCenterPage() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/csv') {
+    if (file && (file.type === 'text/csv' || file.name.endsWith('.csv') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel' ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.xls'))) {
       setUploadedFile(file);
       // Set default name to filename without extension
       const defaultName = file.name.replace(/\.[^/.]+$/, '');
@@ -81,32 +85,58 @@ export function IntelligenceCenterPage() {
       // Read file to preview headers
       try {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setCsvFileContent(content);
-          const { headers, sampleRows } = extractCSVPreview(content);
-          setCsvHeaders(headers);
-          setCsvSampleRow(sampleRows[0]);
+        reader.onload = async (e) => {
+          try {
+            const fileExtension = file.name.split('.').pop()?.toLowerCase();
+            let content: string;
 
-          // Auto-detect mappings
-          const mappingResult = mapHeaders(headers, sampleRows[0]);
+            if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+              // Parse Excel file
+              const XLSX = await import('xlsx');
+              const data = new Uint8Array(e.target?.result as ArrayBuffer);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+              content = XLSX.utils.sheet_to_csv(worksheet);
+            } else {
+              // Parse CSV file
+              content = e.target?.result as string;
+            }
 
-          // If we have unmapped or missing required fields, show mapping UI
-          if (mappingResult.unmappedHeaders.length > 0 || mappingResult.missingRequiredFields.length > 0) {
-            setShowNameDialog(true);
-          } else {
-            // Auto-mapping successful, just show name dialog
-            setHeaderMappings(mappingResult.mappings);
-            setShowNameDialog(true);
+            setCsvFileContent(content);
+            const { headers, sampleRows } = extractCSVPreview(content);
+            setCsvHeaders(headers);
+            setCsvSampleRow(sampleRows[0]);
+
+            // Auto-detect mappings
+            const mappingResult = mapHeaders(headers, sampleRows[0]);
+
+            // If we have unmapped or missing required fields, show mapping UI
+            if (mappingResult.unmappedHeaders.length > 0 || mappingResult.missingRequiredFields.length > 0) {
+              setShowNameDialog(true);
+            } else {
+              // Auto-mapping successful, just show name dialog
+              setHeaderMappings(mappingResult.mappings);
+              setShowNameDialog(true);
+            }
+          } catch (err) {
+            console.error('Error processing file:', err);
+            alert('Error processing file: ' + (err as Error).message);
           }
         };
-        reader.readAsText(file);
+
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+          reader.readAsArrayBuffer(file);
+        } else {
+          reader.readAsText(file);
+        }
       } catch (error) {
-        console.error('Error reading CSV file:', error);
-        alert('Error reading CSV file: ' + (error as Error).message);
+        console.error('Error reading file:', error);
+        alert('Error reading file: ' + (error as Error).message);
       }
     } else {
-      alert('Please upload a valid CSV file');
+      alert('Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)');
     }
   };
 
@@ -140,7 +170,7 @@ export function IntelligenceCenterPage() {
 
   const handleProcessAnalysis = async () => {
     if (!uploadedFile) {
-      alert('Please upload a CSV file first');
+      alert('Please upload a CSV or Excel file first');
       return;
     }
 
@@ -634,7 +664,7 @@ export function IntelligenceCenterPage() {
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileUpload}
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   className="hidden"
                 />
                 
@@ -662,7 +692,7 @@ export function IntelligenceCenterPage() {
                       </div>
                       <div className="block">
                         <span className="text-2xl tracking-wide transition-colors duration-300 font-thin text-gray-600">
-                          CSV File
+                          CSV or Excel File
                         </span>
                       </div>
                     </h3>
@@ -687,7 +717,7 @@ export function IntelligenceCenterPage() {
 
                     {!uploadedFile && !isProcessing && (
                       <p className="text-sm text-gray-500 font-light mt-2">
-                        Select CSV file and provide a custom name
+                        Select CSV or Excel file and provide a custom name
                       </p>
                     )}
                     
