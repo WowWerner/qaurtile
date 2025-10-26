@@ -29,16 +29,14 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
   const finalMappings = [...mappingResult.mappings, ...customMappings];
   const validation = validateMapping(finalMappings);
 
-  // Get truly unmapped headers (not in final mappings)
-  const actualUnmappedHeaders = mappingResult.unmappedHeaders.filter(
-    header => !finalMappings.some(m => m.csvHeader === header)
-  );
-
   useEffect(() => {
     setMappingResult(mapHeaders(headers, sampleRow));
   }, [headers, sampleRow]);
 
   const handleManualMapping = (csvHeader: string, internalField: string) => {
+    // Remove from unmapped
+    const newUnmapped = mappingResult.unmappedHeaders.filter(h => h !== csvHeader);
+
     // Add to custom mappings
     const newCustomMapping: FieldMapping = {
       csvHeader,
@@ -53,25 +51,22 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
       return [...filtered, newCustomMapping];
     });
 
-    // Remove from unmapped headers
     setMappingResult(prev => ({
       ...prev,
-      unmappedHeaders: prev.unmappedHeaders.filter(h => h !== csvHeader)
+      unmappedHeaders: newUnmapped
     }));
   };
 
   const handleRemoveMapping = (csvHeader: string) => {
-    // Check if this was auto-detected
-    const wasAutoDetected = mappingResult.mappings.some(m => m.csvHeader === csvHeader);
-
     // Remove from custom mappings
     setCustomMappings(prev => prev.filter(m => m.csvHeader !== csvHeader));
 
-    // If it was a custom mapping (not auto-detected), add back to unmapped
+    // Add back to unmapped if not auto-detected
+    const wasAutoDetected = mappingResult.mappings.some(m => m.csvHeader === csvHeader);
     if (!wasAutoDetected) {
       setMappingResult(prev => ({
         ...prev,
-        unmappedHeaders: [...prev.unmappedHeaders, csvHeader].sort()
+        unmappedHeaders: [...prev.unmappedHeaders, csvHeader]
       }));
     }
   };
@@ -160,7 +155,7 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
               <div className="text-2xl font-medium text-orange-700">
-                {actualUnmappedHeaders.length}
+                {mappingResult.unmappedHeaders.length}
               </div>
               <div className="text-sm text-orange-600">Unmapped</div>
             </div>
@@ -297,7 +292,7 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
       </Card>
 
       {/* Unmapped Headers */}
-      {actualUnmappedHeaders.length > 0 && (
+      {mappingResult.unmappedHeaders.length > 0 && (
         <Card className="border-orange-200 bg-orange-50/30">
           <CardHeader>
             <CardTitle className="text-lg font-light text-orange-800 flex items-center justify-between">
@@ -315,7 +310,7 @@ export function CSVHeaderPreview({ headers, sampleRow, onMappingComplete, onCanc
           {showUnmapped && (
             <CardContent>
               <div className="space-y-3">
-                {actualUnmappedHeaders.map((header, index) => {
+                {mappingResult.unmappedHeaders.map((header, index) => {
                   const suggestion = mappingResult.suggestions.find(s => s.header === header);
                   const availableFields = getAvailableFields(header);
 
