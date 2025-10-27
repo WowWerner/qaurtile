@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Upload, FileText, CheckCircle, PlayCircle, Download, Phone, MapPin, CreditCard, Users, Settings } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -91,6 +91,7 @@ function suggestColumn(header: string): keyof ColumnMap | null {
 
 export function FNBSpecialisedPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { setRawRows, columnMap, setColumnMap, rows } = useFNBStore();
 
@@ -104,6 +105,14 @@ export function FNBSpecialisedPage() {
   useEffect(() => {
     loadPreviousUploads();
   }, []);
+
+  // Check if returning from a detail page with uploadId
+  useEffect(() => {
+    const stateUploadId = location.state?.uploadId;
+    if (stateUploadId && stateUploadId !== uploadId) {
+      loadPreviousUpload(stateUploadId);
+    }
+  }, [location.state]);
 
   const loadPreviousUploads = async () => {
     try {
