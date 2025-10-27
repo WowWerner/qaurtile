@@ -110,7 +110,7 @@ export function FNBSpecialisedPage() {
       const { data, error } = await supabase
         .from('fnb_uploads')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('uploaded_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
@@ -277,6 +277,9 @@ export function FNBSpecialisedPage() {
 
       setUploadId(upload.id);
       setStep('results');
+
+      // Reload uploads list to show the new upload
+      loadPreviousUploads();
     } catch (error) {
       console.error('Error analyzing file:', error);
       alert('Error analyzing file: ' + (error as Error).message);
@@ -390,7 +393,7 @@ export function FNBSpecialisedPage() {
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{upload.name}</h4>
                           <p className="text-sm text-gray-500">
-                            {upload.total_debtors} debtors • {new Date(upload.created_at).toLocaleDateString()}
+                            {upload.total_debtors} debtors • {new Date(upload.uploaded_at).toLocaleDateString()}
                           </p>
                         </div>
                         <Button
