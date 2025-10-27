@@ -29,6 +29,11 @@ import { EnhancedFeaturesPage } from './pages/EnhancedFeaturesPage';
 import { AccountDetailsPage } from './pages/AccountDetailsPage';
 import { AIPredictiveAnalysisPage } from './pages/AIPredictiveAnalysisPage';
 import { FNBSpecialisedPage } from './pages/FNBSpecialisedPage';
+import { FNBContactAnalysisPage } from './pages/FNBContactAnalysisPage';
+import { FNBAddressAnalysisPage } from './pages/FNBAddressAnalysisPage';
+import { FNBPaymentAnalysisPage } from './pages/FNBPaymentAnalysisPage';
+import { FNBDemographicsAnalysisPage } from './pages/FNBDemographicsAnalysisPage';
+import { FNBScoringConfigurationPage } from './pages/FNBScoringConfigurationPage';
 import { GlobalSidebar } from './components/GlobalSidebar';
 import { usePageTracking } from './hooks/usePageTracking';
 import './App.css';
@@ -120,6 +125,31 @@ function App() {
         <Route path="/intelligence-center/fnb-specialised" element={
           <ProtectedRoute requireSuperAdmin={true}>
             <FNBSpecialisedPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/intelligence-center/fnb-contact-analysis" element={
+          <ProtectedRoute requireSuperAdmin={true}>
+            <FNBContactAnalysisPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/intelligence-center/fnb-address-analysis" element={
+          <ProtectedRoute requireSuperAdmin={true}>
+            <FNBAddressAnalysisPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/intelligence-center/fnb-payment-analysis" element={
+          <ProtectedRoute requireSuperAdmin={true}>
+            <FNBPaymentAnalysisPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/intelligence-center/fnb-demographics-analysis" element={
+          <ProtectedRoute requireSuperAdmin={true}>
+            <FNBDemographicsAnalysisPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/intelligence-center/fnb-scoring-configuration" element={
+          <ProtectedRoute requireSuperAdmin={true}>
+            <FNBScoringConfigurationPage />
           </ProtectedRoute>
         } />
         <Route path="/action-analysis" element={

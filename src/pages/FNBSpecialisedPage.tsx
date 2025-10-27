@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, CheckCircle, PlayCircle, Download } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle, PlayCircle, Download, Phone, MapPin, CreditCard, Users, Settings } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useFNBStore, ColumnMap } from '../stores/fnbStore';
@@ -97,6 +97,7 @@ export function FNBSpecialisedPage() {
   const [step, setStep] = useState<'upload' | 'mapping' | 'analyze' | 'results'>('upload');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
+  const [uploadId, setUploadId] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -197,6 +198,7 @@ export function FNBSpecialisedPage() {
         .update({ status: 'completed' })
         .eq('id', upload.id);
 
+      setUploadId(upload.id);
       setStep('results');
     } catch (error) {
       console.error('Error analyzing file:', error);
@@ -247,6 +249,15 @@ export function FNBSpecialisedPage() {
             </h1>
           </div>
         </div>
+        <Button
+          onClick={() => navigate('/intelligence-center/fnb-scoring-configuration')}
+          variant="outline"
+          size="sm"
+          className="flex items-center space-x-2"
+        >
+          <Settings size={16} strokeWidth={1.5} />
+          <span>Configure FNB Scoring</span>
+        </Button>
       </div>
 
       <div className="max-w-6xl mx-auto space-y-8">
@@ -408,6 +419,50 @@ export function FNBSpecialisedPage() {
                 </Card>
               ))}
             </div>
+
+            <Card className="border-gray-200">
+              <CardHeader>
+                <CardTitle className="text-lg font-light text-gray-800">
+                  Detailed Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Button
+                    variant="outline"
+                    className="flex items-center space-x-2 justify-start"
+                    onClick={() => navigate('/intelligence-center/fnb-contact-analysis', { state: { uploadId } })}
+                  >
+                    <Phone size={16} />
+                    <span>Contact Info</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center space-x-2 justify-start"
+                    onClick={() => navigate('/intelligence-center/fnb-address-analysis', { state: { uploadId } })}
+                  >
+                    <MapPin size={16} />
+                    <span>Address SES</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center space-x-2 justify-start"
+                    onClick={() => navigate('/intelligence-center/fnb-payment-analysis', { state: { uploadId } })}
+                  >
+                    <CreditCard size={16} />
+                    <span>Payment History</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center space-x-2 justify-start"
+                    onClick={() => navigate('/intelligence-center/fnb-demographics-analysis', { state: { uploadId } })}
+                  >
+                    <Users size={16} />
+                    <span>Demographics</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card className="border-gray-200">
               <CardHeader>
