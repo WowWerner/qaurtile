@@ -1,18 +1,7 @@
-import { create } from "zustand";
+import { useState, useCallback, useEffect } from 'react';
 import { DEFAULT_WEIGHTS, Weights, Debtor, computeScore } from "../lib/fnb/scoring";
 
 export type ColumnMap = Partial<Record<keyof Debtor, string>>;
-
-interface FNBState {
-  rawRows: Record<string, any>[];
-  rows: Debtor[];
-  weights: Weights;
-  columnMap: ColumnMap;
-  setRawRows: (r: Record<string, any>[]) => void;
-  setWeights: (w: Weights) => void;
-  setColumnMap: (m: ColumnMap) => void;
-  rescore: () => void;
-}
 
 const loadWeights = (): Weights => {
   try {
@@ -32,32 +21,13 @@ const loadColumnMap = (): ColumnMap => {
   }
 };
 
-export const useFNBStore = create<FNBState>((set, get) => ({
-  rawRows: [],
-  rows: [],
-  weights: loadWeights(),
-  columnMap: loadColumnMap(),
+export function useFNBStore() {
+  const [rawRows, setRawRowsState] = useState<Record<string, any>[]>([]);
+  const [rows, setRows] = useState<Debtor[]>([]);
+  const [weights, setWeightsState] = useState<Weights>(loadWeights());
+  const [columnMap, setColumnMapState] = useState<ColumnMap>(loadColumnMap());
 
-  setRawRows: (raw) => {
-    set({ rawRows: raw });
-    get().rescore();
-  },
-
-  setWeights: (w) => {
-    localStorage.setItem("fnb_weights", JSON.stringify(w));
-    set({ weights: w });
-    get().rescore();
-  },
-
-  setColumnMap: (m) => {
-    localStorage.setItem("fnb_colmap", JSON.stringify(m));
-    set({ columnMap: m });
-    get().rescore();
-  },
-
-  rescore: () => {
-    const { rawRows, columnMap, weights } = get();
-
+  const rescore = useCallback(() => {
     const mapRow = (r: Record<string, any>): Debtor => {
       const pick = (key: keyof Debtor) => columnMap[key] ? r[columnMap[key] as string] : undefined;
 
@@ -102,6 +72,37 @@ export const useFNBStore = create<FNBState>((set, get) => ({
       return d;
     };
 
-    set({ rows: rawRows.map(mapRow) });
-  },
-}));
+    setRows(rawRows.map(mapRow));
+  }, [rawRows, columnMap, weights]);
+
+  useEffect(() => {
+    if (rawRows.length > 0) {
+      rescore();
+    }
+  }, [rawRows, columnMap, weights, rescore]);
+
+  const setRawRows = useCallback((raw: Record<string, any>[]) => {
+    setRawRowsState(raw);
+  }, []);
+
+  const setWeights = useCallback((w: Weights) => {
+    localStorage.setItem("fnb_weights", JSON.stringify(w));
+    setWeightsState(w);
+  }, []);
+
+  const setColumnMap = useCallback((m: ColumnMap) => {
+    localStorage.setItem("fnb_colmap", JSON.stringify(m));
+    setColumnMapState(m);
+  }, []);
+
+  return {
+    rawRows,
+    rows,
+    weights,
+    columnMap,
+    setRawRows,
+    setWeights,
+    setColumnMap,
+    rescore,
+  };
+}
