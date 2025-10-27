@@ -7,7 +7,25 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    // Prevent page reloads on token refresh
+    storage: {
+      getItem: (key) => {
+        return localStorage.getItem(key);
+      },
+      setItem: (key, value) => {
+        localStorage.setItem(key, value);
+      },
+      removeItem: (key) => {
+        localStorage.removeItem(key);
+      }
+    }
+  }
+});
 
 // Database types
 export interface CsvUpload {

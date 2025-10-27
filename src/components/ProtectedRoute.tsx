@@ -14,31 +14,33 @@ export function ProtectedRoute({ children, requireSuperAdmin = false }: Protecte
 
   useEffect(() => {
     let mounted = true;
+    let authCheckComplete = false;
 
     const checkAuth = async () => {
+      // Prevent multiple simultaneous auth checks
+      if (authCheckComplete) return;
+
       try {
-        console.log('Checking auth status...');
         const currentUser = await AuthService.getCurrentUser();
-        
+
         if (mounted) {
           if (currentUser) {
-            console.log('User authenticated:', currentUser.profile.email);
             setUser(currentUser.profile);
             setIsAuthenticated(true);
           } else {
-            console.log('No authenticated user found');
             setUser(null);
             setIsAuthenticated(false);
           }
           setIsLoading(false);
+          authCheckComplete = true;
         }
       } catch (error) {
         console.error('Auth check error:', error);
         if (mounted) {
-          console.log('Setting auth state to false due to error');
           setUser(null);
           setIsAuthenticated(false);
           setIsLoading(false);
+          authCheckComplete = true;
         }
       }
     };
@@ -47,8 +49,7 @@ export function ProtectedRoute({ children, requireSuperAdmin = false }: Protecte
 
     // Set a fallback timeout to prevent infinite loading
     const timeout = setTimeout(() => {
-      if (mounted) {
-        console.log('Auth check timeout - setting loading to false');
+      if (mounted && !authCheckComplete) {
         setIsLoading(false);
       }
     }, 5000);
@@ -57,7 +58,7 @@ export function ProtectedRoute({ children, requireSuperAdmin = false }: Protecte
       mounted = false;
       clearTimeout(timeout);
     };
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   if (isLoading) {
     return (
