@@ -64,10 +64,13 @@ export function FNBDemographicsAnalysisPage() {
     );
   }
 
+  // Helper to check if value is valid (not null, not empty, not "0")
+  const isValid = (val: any) => val && val !== '' && val !== '0';
+
   // Categorize by employer/occupation data
-  const withEmployer = debtors.filter(d => d.employer && d.employer.trim() !== '');
-  const withOccupation = debtors.filter(d => d.occupation && d.occupation.trim() !== '' && !d.employer);
-  const noEmploymentData = debtors.filter(d => (!d.employer || d.employer.trim() === '') && (!d.occupation || d.occupation.trim() === ''));
+  const withEmployer = debtors.filter(d => isValid(d.employer));
+  const withOccupation = debtors.filter(d => isValid(d.occupation) && !isValid(d.employer));
+  const noEmploymentData = debtors.filter(d => !isValid(d.employer) && !isValid(d.occupation));
 
   const handleDownloadCategory = (category: 'employer' | 'occupation' | 'none') => {
     let categoryData, filename;

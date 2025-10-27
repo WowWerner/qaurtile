@@ -118,9 +118,9 @@ export function computeScore(d: Debtor, w: Weights): { score: number; bucket: Bu
   const amount = normalizeNumberString(d.amount) || ((capital || 0) + interest + legal);
   if (amount && (interest + legal) > 0.5 * amount) score += w.debt_high_interest_fee_penalty;
 
-  const ses = inferSES(d.streetLine1);
-  if (ses === "Upmarket") score += w.ses_upmarket;
-  else if (ses === "Mid-income") score += w.ses_mid;
+  const ses = inferSES(d.streetLine1 || d.postalLine1, d.streetPostalCode || d.postalPostalCode);
+  if (ses === "High") score += w.ses_upmarket;
+  else if (ses === "Medium") score += w.ses_mid;
 
   if ((d.occupation || "").match(/government|bank|accountant|teacher|nurse|engineer|technician|teller/i)) {
     score += w.stable_occupation;

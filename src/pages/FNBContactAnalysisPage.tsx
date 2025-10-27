@@ -64,20 +64,32 @@ export function FNBContactAnalysisPage() {
     );
   }
 
+  // Helper to check if value is valid (not null, not empty, not "0")
+  const isValid = (val: any) => val && val !== '' && val !== '0';
+
   // Categorize by contact completeness
   const strongContact = debtors.filter(d =>
-    (d.cell1 || d.cell2 || d.home1 || d.work1) && (d.email1 || d.email2)
+    (isValid(d.cell1) || isValid(d.cell2) || isValid(d.home1) || isValid(d.work1)) &&
+    (isValid(d.email1) || isValid(d.email2))
   );
 
-  const needsTracing = debtors.filter(d =>
-    !(d.cell1 || d.cell2 || d.home1 || d.work1) || !(d.email1 || d.email2)
-  );
+  const needsTracing = debtors.filter(d => {
+    const hasPhone = isValid(d.cell1) || isValid(d.cell2) || isValid(d.home1) || isValid(d.work1);
+    const hasEmail = isValid(d.email1) || isValid(d.email2);
+    const hasAddress = isValid(d.street_line1) || isValid(d.postal_line1);
 
-  const lowProbability = debtors.filter(d =>
-    !(d.cell1 || d.cell2 || d.home1 || d.work1) &&
-    !(d.email1 || d.email2) &&
-    !(d.street_line1 || d.postal_line1)
-  );
+    // Needs tracing if missing phone OR email, but has some contact info
+    return (!hasPhone || !hasEmail) && (hasPhone || hasEmail || hasAddress);
+  });
+
+  const lowProbability = debtors.filter(d => {
+    const hasPhone = isValid(d.cell1) || isValid(d.cell2) || isValid(d.home1) || isValid(d.work1);
+    const hasEmail = isValid(d.email1) || isValid(d.email2);
+    const hasAddress = isValid(d.street_line1) || isValid(d.postal_line1);
+
+    // Low probability if no phone, no email, and no address
+    return !hasPhone && !hasEmail && !hasAddress;
+  });
 
   const handleDownloadCategory = (category: 'strong' | 'needs-tracing' | 'low') => {
     let categoryData, filename;
