@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { supabase } from '../lib/supabase';
 import { Debtor } from '../lib/fnb/scoring';
+import { GoogleMapsHeatmap } from '../components/GoogleMapsHeatmap';
 
 export function FNBAddressAnalysisPage() {
   const navigate = useNavigate();
@@ -209,6 +210,18 @@ export function FNBAddressAnalysisPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Google Maps Heatmap */}
+      <GoogleMapsHeatmap
+        debtors={debtors.map(d => ({
+          name: `${d.debtor_first_name || ''} ${d.debtor_surname || ''}`.trim(),
+          address: d.street_line1 || d.postal_line1 || '',
+          postalCode: d.street_postal_code || d.postal_postal_code || '',
+          amount: d.amount || 0,
+          score: d.score || 0
+        }))}
+        onError={(error) => console.error('Maps error:', error)}
+      />
 
       {/* Detailed Analysis */}
       <Tabs defaultValue="high" className="w-full">

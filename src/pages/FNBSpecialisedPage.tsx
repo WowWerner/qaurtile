@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, FileText, CheckCircle, PlayCircle, Download, Phone, MapPin, CreditCard, Users, Settings } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -98,6 +98,83 @@ export function FNBSpecialisedPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [uploadId, setUploadId] = useState<string | null>(null);
+  const [previousUploads, setPreviousUploads] = useState<any[]>([]);
+  const [loadingUploads, setLoadingUploads] = useState(true);
+
+  useEffect(() => {
+    loadPreviousUploads();
+  }, []);
+
+  const loadPreviousUploads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fnb_uploads')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setPreviousUploads(data || []);
+    } catch (error) {
+      console.error('Error loading previous uploads:', error);
+    } finally {
+      setLoadingUploads(false);
+    }
+  };
+
+  const loadPreviousUpload = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('fnb_debtors')
+        .select('*')
+        .eq('fnb_upload_id', id);
+
+      if (error) throw error;
+
+      const mapped = (data || []).map(d => ({
+        clientRef: d.client_ref,
+        amount: d.amount,
+        capitalOnDefault: d.capital_on_default,
+        interestPortion: d.interest_portion,
+        legalFeePortion: d.legal_fee_portion,
+        interestRate: d.interest_rate,
+        interestDate: d.interest_date,
+        dateOfDefault: d.date_of_default,
+        lastPaymentDate: d.last_payment_date,
+        lastPaymentAmount: d.last_payment_amount,
+        debtorFirstName: d.debtor_first_name,
+        debtorSecondName: d.debtor_second_name,
+        debtorSurname: d.debtor_surname,
+        debtorID: d.debtor_id,
+        email1: d.email1,
+        email2: d.email2,
+        cell1: d.cell1,
+        cell2: d.cell2,
+        home1: d.home1,
+        work1: d.work1,
+        streetLine1: d.street_line1,
+        streetLine2: d.street_line2,
+        streetPostalCode: d.street_postal_code,
+        postalLine1: d.postal_line1,
+        postalLine2: d.postal_line2,
+        postalPostalCode: d.postal_postal_code,
+        occupation: d.occupation,
+        employer: d.employer,
+        employerAddress: d.employer_address,
+        previousAttorneyLegalStage: d.previous_attorney_legal_stage,
+        __score__: d.score,
+        __bucket__: d.bucket,
+        __ses__: d.ses
+      }));
+
+      setRawRows(mapped);
+      setUploadId(id);
+      setStep('results');
+    } catch (error) {
+      console.error('Error loading previous upload:', error);
+      alert('Error loading previous upload: ' + (error as Error).message);
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -262,37 +339,74 @@ export function FNBSpecialisedPage() {
 
       <div className="max-w-6xl mx-auto space-y-8">
         {step === 'upload' && (
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-lg font-light text-gray-800 flex items-center space-x-2">
-                <Upload size={20} strokeWidth={1.5} />
-                <span>Upload FNB CSV File</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="group relative bg-white rounded-2xl p-12 border-2 border-dashed border-gray-300 hover:border-gray-400 cursor-pointer transition-all duration-300 hover:shadow-lg"
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept=".csv"
-                  className="hidden"
-                />
-                <div className="text-center">
-                  <Upload size={48} className="mx-auto mb-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                  <h3 className="text-xl font-medium text-gray-800 mb-2">
-                    Choose FNB CSV File
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Click to browse or drag and drop your file here
-                  </p>
+          <>
+            <Card className="border-gray-200">
+              <CardHeader>
+                <CardTitle className="text-lg font-light text-gray-800 flex items-center space-x-2">
+                  <Upload size={20} strokeWidth={1.5} />
+                  <span>Upload FNB CSV File</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="group relative bg-white rounded-2xl p-12 border-2 border-dashed border-gray-300 hover:border-gray-400 cursor-pointer transition-all duration-300 hover:shadow-lg"
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept=".csv"
+                    className="hidden"
+                  />
+                  <div className="text-center">
+                    <Upload size={48} className="mx-auto mb-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    <h3 className="text-xl font-medium text-gray-800 mb-2">
+                      Choose FNB CSV File
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Click to browse or drag and drop your file here
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {!loadingUploads && previousUploads.length > 0 && (
+              <Card className="border-gray-200">
+                <CardHeader>
+                  <CardTitle className="text-lg font-light text-gray-800 flex items-center space-x-2">
+                    <FileText size={20} strokeWidth={1.5} />
+                    <span>Previous Uploads</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {previousUploads.map((upload) => (
+                      <div
+                        key={upload.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{upload.name}</h4>
+                          <p className="text-sm text-gray-500">
+                            {upload.total_debtors} debtors • {new Date(upload.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => loadPreviousUpload(upload.id)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Load
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
         {step === 'mapping' && (
