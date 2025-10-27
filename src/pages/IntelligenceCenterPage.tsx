@@ -11,7 +11,6 @@ import { Checkbox } from '../components/ui/checkbox';
 import { AnalysisResults } from '../utils/csvProcessor';
 import { extractCSVPreview, parseCSVWithMapping } from '../utils/enhancedCsvProcessor';
 import { mapHeaders, type FieldMapping } from '../utils/headerMapper';
-import { QUARTILE_STANDARD_TEMPLATE } from '../utils/quartileTemplateMapper';
 import { CSVHeaderPreview } from '../components/CSVHeaderPreview';
 import { CSVTemplateGenerator } from '../components/CSVTemplateGenerator';
 import { SupabaseService } from '../utils/supabaseService';
@@ -19,7 +18,6 @@ import { SupabaseService } from '../utils/supabaseService';
 export function IntelligenceCenterPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const fnbFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [csvName, setCsvName] = useState<string>('');
   const [activeCsvId, setActiveCsvId] = useState<string | null>(() => {
@@ -46,7 +44,6 @@ export function IntelligenceCenterPage() {
   const [csvToDelete, setCsvToDelete] = useState<{ id: string; name: string } | null>(null);
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const [selectedCsvIds, setSelectedCsvIds] = useState<Set<string>>(new Set());
-  const [useFnbTemplate, setUseFnbTemplate] = useState(false);
 
   // Load previous uploads on component mount
   useEffect(() => {
@@ -102,40 +99,6 @@ export function IntelligenceCenterPage() {
             setHeaderMappings(mappingResult.mappings);
             setShowNameDialog(true);
           }
-        };
-        reader.readAsText(file);
-      } catch (error) {
-        console.error('Error reading CSV file:', error);
-        alert('Error reading CSV file: ' + (error as Error).message);
-      }
-    } else {
-      alert('Please upload a valid CSV file');
-    }
-  };
-
-  const handleFnbFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type === 'text/csv') {
-      setUploadedFile(file);
-      setUseFnbTemplate(true);
-
-      // Set default name to filename without extension
-      const defaultName = file.name.replace(/\.[^/.]+$/, '');
-      setCsvName(defaultName);
-
-      // Read file to preview headers
-      try {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setCsvFileContent(content);
-          const { headers, sampleRows } = extractCSVPreview(content);
-          setCsvHeaders(headers);
-          setCsvSampleRow(sampleRows[0]);
-
-          // Apply FNB Quartile template mappings directly
-          setHeaderMappings(QUARTILE_STANDARD_TEMPLATE.mappings);
-          setShowNameDialog(true);
         };
         reader.readAsText(file);
       } catch (error) {
@@ -428,7 +391,6 @@ export function IntelligenceCenterPage() {
     setCsvSampleRow(undefined);
     setHeaderMappings([]);
     setCsvFileContent('');
-    setUseFnbTemplate(false);
   };
 
   const getStepStatus = (step: string) => {
@@ -454,10 +416,6 @@ export function IntelligenceCenterPage() {
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleFnbUploadClick = () => {
-    fnbFileInputRef.current?.click();
   };
 
   const handleScoringMethodology = () => {
@@ -538,69 +496,18 @@ export function IntelligenceCenterPage() {
             )}
 
             {!showHeaderMapping && (
-            <>
-            {/* FNB Specialized Upload Banner */}
-            {!uploadedFile && !isProcessing && !showNameDialog && (
-              <div className="mb-6">
-                <Card className="border-orange-300 bg-gradient-to-r from-orange-50 to-amber-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="bg-orange-500 text-white rounded-full p-3">
-                          <FileText size={24} strokeWidth={1.5} />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900 text-lg">FNB Specialized Format</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Upload Quartile/FNB handover files with automatic field mapping and address consolidation
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={handleFnbUploadClick}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-6"
-                      >
-                        <Upload size={16} className="mr-2" />
-                        FNB Specialised
-                      </Button>
-                      <input
-                        type="file"
-                        ref={fnbFileInputRef}
-                        onChange={handleFnbFileUpload}
-                        accept=".csv"
-                        className="hidden"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* CSV Name Dialog */}
               {showNameDialog && (
                 <div className="lg:col-span-2 mb-6">
-                  <Card className={`border-orange-200 ${useFnbTemplate ? 'bg-gradient-to-r from-orange-50 to-amber-50' : 'bg-orange-50'}`}>
+                  <Card className="border-orange-200 bg-orange-50">
                     <CardHeader>
-                      <CardTitle className="text-lg font-light text-orange-800 flex items-center space-x-2">
-                        <span>Name Your CSV Upload</span>
-                        {useFnbTemplate && (
-                          <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full font-medium">
-                            FNB Format
-                          </span>
-                        )}
+                      <CardTitle className="text-lg font-light text-orange-800">
+                        Name Your CSV Upload
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {useFnbTemplate && (
-                          <div className="bg-white/50 border border-orange-200 rounded-lg p-3 mb-2">
-                            <p className="text-sm text-gray-700 flex items-center">
-                              <CheckCircle size={16} className="text-green-500 mr-2" />
-                              Using FNB Specialized template with automatic field mapping and address consolidation
-                            </p>
-                          </div>
-                        )}
                         <div>
                           <label className="text-sm font-medium text-gray-700 mb-2 block">
                             CSV Name (this will be used to identify your upload):
@@ -616,14 +523,14 @@ export function IntelligenceCenterPage() {
                           />
                         </div>
                         <div className="flex space-x-3">
-                          <Button
+                          <Button 
                             onClick={handleConfirmName}
                             disabled={!csvName.trim()}
                             className="bg-[rgb(0,171,174)] hover:bg-[rgb(0,151,154)]"
                           >
                             Continue
                           </Button>
-                          <Button
+                          <Button 
                             onClick={resetUpload}
                             variant="outline"
                           >
@@ -936,7 +843,6 @@ export function IntelligenceCenterPage() {
                 )}
               </div>
             </div>
-            </>
             )}
 
             {/* Previously Uploaded CSV Files */}
