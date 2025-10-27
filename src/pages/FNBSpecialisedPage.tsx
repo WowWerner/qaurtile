@@ -124,6 +124,12 @@ export function FNBSpecialisedPage() {
     }
   };
 
+  const toNumeric = (value: any): number | null => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return isNaN(num) ? null : num;
+  };
+
   const handleAnalyze = async () => {
     if (!uploadedFile) return;
 
@@ -145,39 +151,39 @@ export function FNBSpecialisedPage() {
 
       const debtorRecords = rows.map(debtor => ({
         fnb_upload_id: upload.id,
-        client_ref: debtor.clientRef,
-        amount: debtor.amount,
-        capital_on_default: debtor.capitalOnDefault,
-        interest_portion: debtor.interestPortion,
-        legal_fee_portion: debtor.legalFeePortion,
-        interest_rate: debtor.interestRate,
-        interest_date: debtor.interestDate,
-        date_of_default: debtor.dateOfDefault,
-        last_payment_date: debtor.lastPaymentDate,
-        last_payment_amount: debtor.lastPaymentAmount,
-        debtor_first_name: debtor.debtorFirstName,
-        debtor_second_name: debtor.debtorSecondName,
-        debtor_surname: debtor.debtorSurname,
-        debtor_id: debtor.debtorID,
-        email1: debtor.email1,
-        email2: debtor.email2,
-        cell1: debtor.cell1,
-        cell2: debtor.cell2,
-        home1: debtor.home1,
-        work1: debtor.work1,
-        street_line1: debtor.streetLine1,
-        street_line2: debtor.streetLine2,
-        street_postal_code: debtor.streetPostalCode,
-        postal_line1: debtor.postalLine1,
-        postal_line2: debtor.postalLine2,
-        postal_postal_code: debtor.postalPostalCode,
-        occupation: debtor.occupation,
-        employer: debtor.employer,
-        employer_address: debtor.employerAddress,
-        previous_attorney_legal_stage: debtor.previousAttorneyLegalStage,
-        score: debtor.__score__,
-        bucket: debtor.__bucket__,
-        ses: debtor.__ses__
+        client_ref: debtor.clientRef || null,
+        amount: toNumeric(debtor.amount),
+        capital_on_default: toNumeric(debtor.capitalOnDefault),
+        interest_portion: toNumeric(debtor.interestPortion),
+        legal_fee_portion: toNumeric(debtor.legalFeePortion),
+        interest_rate: toNumeric(debtor.interestRate),
+        interest_date: debtor.interestDate || null,
+        date_of_default: debtor.dateOfDefault || null,
+        last_payment_date: debtor.lastPaymentDate || null,
+        last_payment_amount: toNumeric(debtor.lastPaymentAmount),
+        debtor_first_name: debtor.debtorFirstName || null,
+        debtor_second_name: debtor.debtorSecondName || null,
+        debtor_surname: debtor.debtorSurname || null,
+        debtor_id: debtor.debtorID || null,
+        email1: debtor.email1 || null,
+        email2: debtor.email2 || null,
+        cell1: debtor.cell1 || null,
+        cell2: debtor.cell2 || null,
+        home1: debtor.home1 || null,
+        work1: debtor.work1 || null,
+        street_line1: debtor.streetLine1 || null,
+        street_line2: debtor.streetLine2 || null,
+        street_postal_code: debtor.streetPostalCode || null,
+        postal_line1: debtor.postalLine1 || null,
+        postal_line2: debtor.postalLine2 || null,
+        postal_postal_code: debtor.postalPostalCode || null,
+        occupation: debtor.occupation || null,
+        employer: debtor.employer || null,
+        employer_address: debtor.employerAddress || null,
+        previous_attorney_legal_stage: debtor.previousAttorneyLegalStage || null,
+        score: debtor.__score__ || null,
+        bucket: debtor.__bucket__ || null,
+        ses: debtor.__ses__ || null
       }));
 
       const { error: debtorsError } = await supabase
