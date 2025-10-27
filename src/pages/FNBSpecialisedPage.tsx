@@ -3,9 +3,46 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, FileText, CheckCircle, PlayCircle, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import Papa from 'papaparse';
 import { useFNBStore, ColumnMap } from '../stores/fnbStore';
 import { supabase } from '../lib/supabase';
+
+function parseCSV(csvContent: string): any[] {
+  const lines = csvContent.split('\n').filter(line => line.trim());
+  if (lines.length === 0) return [];
+
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+  const rows = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+    const row: any = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] || '';
+    });
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function csvStringify(data: any[]): string {
+  if (data.length === 0) return '';
+
+  const headers = Object.keys(data[0]);
+  const csvRows = [headers.join(',')];
+
+  for (const row of data) {
+    const values = headers.map(header => {
+      const value = row[header] || '';
+      return typeof value === 'string' && (value.includes(',') || value.includes('"'))
+        ? `"${value.replace(/"/g, '""')}`
+        : value;
+    });
+    csvRows.push(values.join(','));
+  }
+
+  return csvRows.join('\n');
+}
 
 const AUTO_KEYS: Array<keyof ColumnMap> = [
   "clientRef", "amount", "capitalOnDefault", "interestPortion", "legalFeePortion", "interestRate",
@@ -65,24 +102,23 @@ export function FNBSpecialisedPage() {
     const file = event.target.files?.[0];
     if (file && file.type === 'text/csv') {
       setUploadedFile(file);
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (res) => {
-          const rawData = (res.data as any[]).filter(Boolean);
-          setRawRows(rawData);
-          const hdrs = Object.keys(rawData[0] || {});
-          setHeaders(hdrs);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        const rawData = parseCSV(content);
+        setRawRows(rawData);
+        const hdrs = Object.keys(rawData[0] || {});
+        setHeaders(hdrs);
 
-          const m: ColumnMap = { ...columnMap };
-          for (const h of hdrs) {
-            const key = suggestColumn(h);
-            if (key && !m[key]) m[key] = h;
-          }
-          setColumnMap(m);
-          setStep('mapping');
+        const m: ColumnMap = { ...columnMap };
+        for (const h of hdrs) {
+          const key = suggestColumn(h);
+          if (key && !m[key]) m[key] = h;
         }
-      });
+        setColumnMap(m);
+        setStep('mapping');
+      };
+      reader.readAsText(file);
     } else {
       alert('Please upload a valid CSV file');
     }
@@ -165,7 +201,7 @@ export function FNBSpecialisedPage() {
 
   const exportBucket = (bucketName: string) => {
     const filtered = rows.filter(r => r.__bucket__ === bucketName);
-    const csv = Papa.unparse(filtered);
+    const csv = csvStringify(filtered);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
