@@ -126,7 +126,7 @@ export function ContactAnalysisPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/intelligence-center')}
+            onClick={() => navigate(-1)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
           >
             <ArrowLeft size={20} strokeWidth={1.5} className="text-gray-600" />
