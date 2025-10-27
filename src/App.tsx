@@ -28,6 +28,7 @@ import { LegalAnalysisPage } from './pages/LegalAnalysisPage';
 import { EnhancedFeaturesPage } from './pages/EnhancedFeaturesPage';
 import { AccountDetailsPage } from './pages/AccountDetailsPage';
 import { AIPredictiveAnalysisPage } from './pages/AIPredictiveAnalysisPage';
+import { FNBSpecialisedPage } from './pages/FNBSpecialisedPage';
 import { GlobalSidebar } from './components/GlobalSidebar';
 import { usePageTracking } from './hooks/usePageTracking';
 import './App.css';
@@ -114,6 +115,11 @@ function App() {
         <Route path="/intelligence-center/ai-predictive-analysis" element={
           <ProtectedRoute>
             <AIPredictiveAnalysisPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/intelligence-center/fnb-specialised" element={
+          <ProtectedRoute requireSuperAdmin={true}>
+            <FNBSpecialisedPage />
           </ProtectedRoute>
         } />
         <Route path="/action-analysis" element={

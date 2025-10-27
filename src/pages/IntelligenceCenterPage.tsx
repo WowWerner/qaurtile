@@ -1359,8 +1359,21 @@ export function IntelligenceCenterPage() {
         </Tabs>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div 
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div
+            onClick={() => navigate('/intelligence-center/fnb-specialised')}
+            className="group relative bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6 h-32 cursor-pointer transition-all duration-300 ease-out hover:shadow-xl hover:shadow-gray-200/60 hover:-translate-y-1 border-2 border-gray-200 hover:border-gray-300"
+          >
+            <div className="relative z-10 h-full flex items-center space-x-4">
+              <BarChart3 size={24} strokeWidth={1.5} className="text-gray-700 group-hover:text-gray-900 transition-colors duration-300" />
+              <div>
+                <h4 className="font-semibold text-gray-900">FNB Specialised</h4>
+                <p className="text-sm text-gray-600 font-light">Custom analysis model</p>
+              </div>
+            </div>
+          </div>
+
+          <div
             onClick={() => navigate('/intelligence-center/scoring-methodology')}
             className="group relative bg-white rounded-xl p-6 h-32 cursor-pointer transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-0.5 border border-gray-100"
           >
@@ -1373,7 +1386,7 @@ export function IntelligenceCenterPage() {
             </div>
           </div>
 
-          <div 
+          <div
             onClick={() => navigate('/intelligence-center/scoring-configuration')}
             className="group relative bg-white rounded-xl p-6 h-32 cursor-pointer transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-0.5 border border-gray-100"
           >
@@ -1386,7 +1399,7 @@ export function IntelligenceCenterPage() {
             </div>
           </div>
 
-          <div 
+          <div
             onClick={() => navigate('/intelligence-center/batch-history')}
             className="group relative bg-white rounded-xl p-6 h-32 cursor-pointer transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-0.5 border border-gray-100"
           >
@@ -1399,7 +1412,7 @@ export function IntelligenceCenterPage() {
             </div>
           </div>
 
-          <div 
+          <div
             onClick={() => (activeCsvId || csvUploadId) && navigate('/intelligence-center/analysis-results', { state: { fileName: activeCsvName || csvName || uploadedFile?.name || 'Latest Analysis', csvUploadId: activeCsvId || csvUploadId } })}
             className={`group relative bg-white rounded-xl p-6 h-32 transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-0.5 border border-gray-100 ${
               (activeCsvId || csvUploadId) ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
