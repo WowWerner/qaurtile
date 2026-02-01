@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Pin, PinOff, Plus, X, Building, Brain, Users, BarChart3, UserCheck, DollarSign, Target, Activity, Trash2, ChevronUp, ChevronDown, Zap } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Clock, Pin, PinOff, X, Building, Brain, Users, BarChart3, UserCheck, DollarSign, Target, Activity, Trash2, Zap } from 'lucide-react';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { UserInteractionsService } from '../utils/userInteractions';
 import { cn } from '../lib/utils';
 
@@ -28,7 +26,6 @@ export function QuickLinksSection({ className }: QuickLinksSectionProps) {
   const navigate = useNavigate();
   const [recentItems, setRecentItems] = useState<any[]>([]);
   const [pinnedItems, setPinnedItems] = useState<any[]>([]);
-  const [showQuickActions, setShowQuickActions] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'recent' | 'pinned' | 'quick'>('recent');
 

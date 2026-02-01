@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { supabase } from '../lib/supabase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface CampaignSummary {
   id: number;
@@ -34,7 +34,6 @@ export function CampaignsDashboardPage() {
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [actionTiming, setActionTiming] = useState<ActionTiming[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClient, setSelectedClient] = useState<string>('all');
 
   useEffect(() => {
     loadCampaignData();

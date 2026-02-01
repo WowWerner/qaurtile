@@ -1,7 +1,6 @@
-import { Clock, AlertTriangle, CheckCircle, TrendingDown, Users, Target } from 'lucide-react';
+import { TrendingDown, Users, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function WorkloadTab() {
   // Current capacity analysis data

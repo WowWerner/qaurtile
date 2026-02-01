@@ -1,10 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
-import { ArrowLeft, Phone, Mail, MapPin, Calendar, DollarSign, AlertCircle, TrendingUp, FileText } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, DollarSign, AlertCircle, TrendingUp, FileText } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { AnalysisResults } from '../utils/csvProcessor';
 
 
 export function DebtorDetailsPage() {

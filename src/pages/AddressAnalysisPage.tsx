@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download, MapPin, Home, Building, AlertTriangle, Map, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Download, Home, Building, AlertTriangle, Map, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { AnalysisResults } from '../utils/csvProcessor';
 import { SupabaseService } from '../utils/supabaseService';
 import { GoogleMapsHeatmap } from '../components/GoogleMapsHeatmap';
 

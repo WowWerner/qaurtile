@@ -7,9 +7,8 @@ import { QuickLinksSection } from '../components/QuickLinksSection';
 import { UserInteractionsService } from '../utils/userInteractions';
 import { usePageTracking } from '../hooks/usePageTracking';
 import { supabase } from '../lib/supabase';
-import { format } from 'date-fns';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
-import { Brain, TrendingUp, Users, BarChart3, Target, DollarSign, Clock, Building, UserCheck } from 'lucide-react';
+import { Brain, TrendingUp, Users, BarChart3 } from 'lucide-react';
 
 export function HomePage() {
   const navigate = useNavigate();

@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Target, TrendingUp, Phone, Building, Scale, UserCheck, Award, AlertTriangle, Clock, BarChart3, Download, Settings, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Users, Target, TrendingUp, Phone, Building, Scale, UserCheck, Award, AlertTriangle, Clock, Download, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
-import { Progress } from '../components/ui/progress';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export function AccountActionAnalysisPage() {
   const navigate = useNavigate();

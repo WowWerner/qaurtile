@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Search, Eye, DollarSign, Calendar, Target, Clock, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Download, Search, Eye, DollarSign, Target, Clock, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';

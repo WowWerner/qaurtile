@@ -1,10 +1,7 @@
-import { DivideIcon } from 'lucide-react';
-import { LucideCrop as LucideProps } from 'lucide-react';
-
 interface PredictionCardProps {
   title: string[];
   boldWords: string[];
-  icon: React.ComponentType<LucideProps>;
+  icon: React.ComponentType<any>;
   color: string;
   onClick: () => void;
 }

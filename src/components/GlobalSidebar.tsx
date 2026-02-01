@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BarChart3, Target, DollarSign, Building, UserCheck, Clock, Home, ChevronUp, ChevronDown } from 'lucide-react';
+import { Target, DollarSign, UserCheck, Clock, Home, ChevronUp, ChevronDown } from 'lucide-react';
 import { UserInteractionsService } from '../utils/userInteractions';
 
 export function GlobalSidebar() {

@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, BarChart3, Settings, Info, Phone, MapPin, CreditCard, DollarSign, Users, Scale, CheckCircle, Clock, Play, MoreVertical, Trash2, Download } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, BarChart3, Settings, Info, Phone, MapPin, CreditCard, DollarSign, Users, Scale, CheckCircle, Play, MoreVertical, Trash2, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
 import { Checkbox } from '../components/ui/checkbox';

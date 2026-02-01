@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, AlertCircle, Target, BarChart3, Activity, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Target, BarChart3, Activity, DollarSign, Users, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { supabase } from '../lib/supabase';
@@ -124,11 +124,6 @@ export function ClientDataPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDownloadCSV = () => {
-    // Placeholder for CSV download functionality
-    console.log('Downloading CSV...');
   };
 
   const handleCardClick = (cardType: string) => {

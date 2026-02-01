@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, RotateCcw, Settings, Phone, CreditCard, Scale, MapPin, User } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, Phone, CreditCard, Scale, MapPin, User } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Slider } from '../components/ui/slider';

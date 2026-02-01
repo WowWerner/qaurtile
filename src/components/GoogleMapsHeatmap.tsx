@@ -3,7 +3,7 @@ import { Loader } from '@googlemaps/js-api-loader';
 import { MarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Map, RefreshCw, MapPin, Clock, AlertCircle, Target, Users, DollarSign } from 'lucide-react';
+import { Map, RefreshCw, MapPin, Clock, AlertCircle, Target } from 'lucide-react';
 
 interface GecodedDebtor {
   debtor: any;

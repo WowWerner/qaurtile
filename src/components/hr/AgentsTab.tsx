@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { User, Badge as BadgeIcon, Award, TrendingUp } from 'lucide-react';
+import { User, Badge as BadgeIcon, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/lib/supabase';
 
 interface Agent {
