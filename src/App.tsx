@@ -19,6 +19,7 @@ import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
 import { ClientsDashboardPage } from './pages/ClientsDashboardPage';
 import HRDashboardPage from './pages/HRDashboardPage';
 import { ProductivityDashboardPage } from './pages/ProductivityDashboardPage';
+import { ReportsDashboardPage } from './pages/ReportsDashboardPage';
 import { ContactAnalysisPage } from './pages/ContactAnalysisPage';
 import { AddressAnalysisPage } from './pages/AddressAnalysisPage';
 import { PaymentAnalysisPage } from './pages/PaymentAnalysisPage';
@@ -205,6 +206,11 @@ function App() {
         <Route path="/dashboard/productivity" element={
           <ProtectedRoute>
             <ProductivityDashboardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard/reports" element={
+          <ProtectedRoute>
+            <ReportsDashboardPage />
           </ProtectedRoute>
         } />
         <Route path="/enhanced-features" element={

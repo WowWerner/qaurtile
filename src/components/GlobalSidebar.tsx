@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Target, DollarSign, UserCheck, Clock, Home, ChevronUp, ChevronDown } from 'lucide-react';
+import { Target, DollarSign, UserCheck, Clock, Home, ChevronUp, ChevronDown, FileText } from 'lucide-react';
 import { UserInteractionsService } from '../utils/userInteractions';
 
 export function GlobalSidebar() {
@@ -56,6 +56,12 @@ export function GlobalSidebar() {
       icon: Clock,
       path: '/dashboard/productivity',
       iconName: 'Clock'
+    },
+    {
+      name: 'Reports',
+      icon: FileText,
+      path: '/dashboard/reports',
+      iconName: 'FileText'
     }
   ];
 
