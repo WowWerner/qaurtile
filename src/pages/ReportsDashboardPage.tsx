@@ -33,7 +33,8 @@ export function ReportsDashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableData, setTableData] = useState<Record<string, unknown>[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
@@ -41,8 +42,9 @@ export function ReportsDashboardPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const LIMIT = 25;
 
-  const fetchOverview = useCallback(async () => {
-    setLoading(true);
+  const fetchOverview = useCallback(async (isInitial = false) => {
+    if (isInitial) setInitialLoading(true);
+    else setRefreshing(true);
     setError(null);
     try {
       const [countRes, tablesRes] = await Promise.all([
@@ -61,12 +63,13 @@ export function ReportsDashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect to API');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchOverview();
+    fetchOverview(true);
   }, [fetchOverview]);
 
   useEffect(() => {
@@ -151,7 +154,7 @@ export function ReportsDashboardPage() {
     return String(value);
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -172,11 +175,12 @@ export function ReportsDashboardPage() {
               <p className="text-gray-500 mt-1">Swordfish database explorer</p>
             </div>
             <button
-              onClick={fetchOverview}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
+              onClick={() => fetchOverview()}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <RefreshCw size={15} />
-              Refresh
+              <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
         </div>
