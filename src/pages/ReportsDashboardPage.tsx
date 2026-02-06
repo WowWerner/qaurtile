@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { FileText, Database, RefreshCw, Table2, ChevronRight, Search, ArrowUpDown, ChevronLeft } from 'lucide-react';
 
 const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/swordfish-proxy`;
+const AUTH_HEADERS = {
+  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+};
 
 interface TableInfo {
   Tables_in_swordfish_qaurtile: string;
@@ -48,8 +51,8 @@ export function ReportsDashboardPage() {
     setError(null);
     try {
       const [countRes, tablesRes] = await Promise.all([
-        fetch(`${PROXY_BASE}?path=tables/count`),
-        fetch(`${PROXY_BASE}?path=tables`),
+        fetch(`${PROXY_BASE}?path=tables/count`, { headers: AUTH_HEADERS }),
+        fetch(`${PROXY_BASE}?path=tables`, { headers: AUTH_HEADERS }),
       ]);
       const countData: TableCountResponse = await countRes.json();
       const tablesData: TablesListResponse = await tablesRes.json();
@@ -85,7 +88,7 @@ export function ReportsDashboardPage() {
     setTableLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${PROXY_BASE}?path=table/${tableName}&limit=${LIMIT}&offset=${newOffset}`);
+      const res = await fetch(`${PROXY_BASE}?path=table/${tableName}&limit=${LIMIT}&offset=${newOffset}`, { headers: AUTH_HEADERS });
       const data: TableDataResponse = await res.json();
       if (data.success) {
         setTableData(data.data);
