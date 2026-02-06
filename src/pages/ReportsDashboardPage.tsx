@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, Database, RefreshCw, Table2, ChevronRight, Search, ArrowUpDown, ChevronLeft } from 'lucide-react';
 
-const API_BASE = 'http://34.132.34.189:3000/api';
+const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/swordfish-proxy`;
 
 interface TableInfo {
   Tables_in_swordfish_qaurtile: string;
@@ -46,8 +46,8 @@ export function ReportsDashboardPage() {
     setError(null);
     try {
       const [countRes, tablesRes] = await Promise.all([
-        fetch(`${API_BASE}/tables/count`),
-        fetch(`${API_BASE}/tables`),
+        fetch(`${PROXY_BASE}?path=tables/count`),
+        fetch(`${PROXY_BASE}?path=tables`),
       ]);
       const countData: TableCountResponse = await countRes.json();
       const tablesData: TablesListResponse = await tablesRes.json();
@@ -82,7 +82,7 @@ export function ReportsDashboardPage() {
     setTableLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/table/${tableName}?limit=${LIMIT}&offset=${newOffset}`);
+      const res = await fetch(`${PROXY_BASE}?path=table/${tableName}&limit=${LIMIT}&offset=${newOffset}`);
       const data: TableDataResponse = await res.json();
       if (data.success) {
         setTableData(data.data);
