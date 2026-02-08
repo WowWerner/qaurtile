@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Database, RefreshCw, Table2, ChevronRight, Search, ArrowUpDown, ChevronLeft, BarChart3, TrendingUp, DollarSign, Calendar, Phone } from 'lucide-react';
+import { FileText, Database, RefreshCw, Table2, ChevronRight, Search, ArrowUpDown, ChevronLeft, BarChart3, TrendingUp, DollarSign, Calendar, Phone, Mail, MessageSquare, Award, Clock, Users } from 'lucide-react';
+import { getContactabilityMetrics, type ContactabilityMetrics } from '../services/contactabilityService';
 
 const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/swordfish-proxy`;
 const AUTH_HEADERS = {
@@ -45,6 +46,8 @@ export function ReportsDashboardPage() {
   const [offset, setOffset] = useState(0);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [contactabilityMetrics, setContactabilityMetrics] = useState<ContactabilityMetrics | null>(null);
+  const [contactabilityLoading, setContactabilityLoading] = useState(false);
   const LIMIT = 25;
 
   const fetchOverview = useCallback(async (isInitial = false) => {
@@ -76,6 +79,25 @@ export function ReportsDashboardPage() {
   useEffect(() => {
     fetchOverview(true);
   }, [fetchOverview]);
+
+  const fetchContactabilityData = async () => {
+    setContactabilityLoading(true);
+    try {
+      const metrics = await getContactabilityMetrics();
+      setContactabilityMetrics(metrics);
+    } catch (err) {
+      console.error('Failed to load contactability metrics:', err);
+      setError('Failed to load contactability data');
+    } finally {
+      setContactabilityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'contactability') {
+      fetchContactabilityData();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -559,38 +581,316 @@ export function ReportsDashboardPage() {
 
         {/* Contactability Report */}
         {activeTab === 'contactability' && (
-          <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
-                <Phone size={24} className="text-teal-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Contactability Report</h2>
-                <p className="text-sm text-gray-500">Analyze contact success rates and channel effectiveness</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-xl p-5 border border-pink-200/50">
-                <p className="text-sm font-medium text-pink-600 mb-1">Contact Attempts</p>
-                <p className="text-3xl font-bold text-pink-900">4,521</p>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-5 border border-green-200/50">
-                <p className="text-sm font-medium text-green-600 mb-1">Successful</p>
-                <p className="text-3xl font-bold text-green-900">2,834</p>
-              </div>
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-5 border border-gray-200/50">
-                <p className="text-sm font-medium text-gray-600 mb-1">Unreachable</p>
-                <p className="text-3xl font-bold text-gray-900">1,687</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50">
-                <p className="text-sm font-medium text-blue-600 mb-1">Success Rate</p>
-                <p className="text-3xl font-bold text-blue-900">62.7%</p>
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
+                    <Phone size={24} className="text-teal-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Contactability Report</h2>
+                    <p className="text-sm text-gray-500">Real-time contact success rates and channel effectiveness</p>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchContactabilityData}
+                  disabled={contactabilityLoading}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw size={15} className={contactabilityLoading ? 'animate-spin' : ''} />
+                  {contactabilityLoading ? 'Loading...' : 'Refresh'}
+                </button>
               </div>
             </div>
-            <div className="text-center py-12 text-gray-400">
-              <Phone size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="font-medium">Advanced contactability analytics coming soon</p>
-            </div>
+
+            {contactabilityLoading ? (
+              <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-16 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                  <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
+                  <p className="text-gray-500 font-medium">Loading contactability data...</p>
+                </div>
+              </div>
+            ) : contactabilityMetrics ? (
+              <>
+                {/* Overview Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-xl border border-gray-200/60 shadow-sm p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-sky-50 flex items-center justify-center">
+                        <Phone size={18} className="text-sky-600" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-600">Total Attempts</p>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{contactabilityMetrics.totalAttempts.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200/60 shadow-sm p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                        <Award size={18} className="text-green-600" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-600">Successful</p>
+                    </div>
+                    <p className="text-3xl font-bold text-green-900">{contactabilityMetrics.successfulContacts.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200/60 shadow-sm p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+                        <TrendingUp size={18} className="text-orange-600" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-600">Success Rate</p>
+                    </div>
+                    <p className="text-3xl font-bold text-orange-900">{contactabilityMetrics.successRate.toFixed(1)}%</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200/60 shadow-sm p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                        <BarChart3 size={18} className="text-purple-600" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-600">Avg Contact Score</p>
+                    </div>
+                    <p className="text-3xl font-bold text-purple-900">{contactabilityMetrics.averageContactScore.toFixed(1)}</p>
+                  </div>
+                </div>
+
+                {/* Channel Performance */}
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-5">Channel Performance</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div className="border border-gray-200 rounded-xl p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                          <Phone size={18} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Phone</p>
+                          <p className="text-xs text-gray-400">{contactabilityMetrics.byChannel.phone.attempts} attempts</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Successful</span>
+                          <span className="text-sm font-semibold text-gray-900">{contactabilityMetrics.byChannel.phone.success}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Success Rate</span>
+                          <span className="text-sm font-semibold text-blue-600">{contactabilityMetrics.byChannel.phone.rate.toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
+                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${contactabilityMetrics.byChannel.phone.rate}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-xl p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                          <Mail size={18} className="text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Email</p>
+                          <p className="text-xs text-gray-400">{contactabilityMetrics.byChannel.email.attempts} attempts</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Successful</span>
+                          <span className="text-sm font-semibold text-gray-900">{contactabilityMetrics.byChannel.email.success}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Success Rate</span>
+                          <span className="text-sm font-semibold text-green-600">{contactabilityMetrics.byChannel.email.rate.toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
+                          <div className="bg-green-500 h-2 rounded-full" style={{ width: `${contactabilityMetrics.byChannel.email.rate}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-xl p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
+                          <MessageSquare size={18} className="text-teal-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">SMS</p>
+                          <p className="text-xs text-gray-400">{contactabilityMetrics.byChannel.sms.attempts} attempts</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Successful</span>
+                          <span className="text-sm font-semibold text-gray-900">{contactabilityMetrics.byChannel.sms.success}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Success Rate</span>
+                          <span className="text-sm font-semibold text-teal-600">{contactabilityMetrics.byChannel.sms.rate.toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
+                          <div className="bg-teal-500 h-2 rounded-full" style={{ width: `${contactabilityMetrics.byChannel.sms.rate}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time of Day Performance */}
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
+                    <Clock size={20} />
+                    Best Time to Contact
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="border border-gray-200 rounded-xl p-4">
+                      <p className="text-sm font-medium text-gray-600 mb-2">Morning (6AM-12PM)</p>
+                      <p className="text-2xl font-bold text-gray-900 mb-1">{contactabilityMetrics.byTimeOfDay.morning.rate.toFixed(1)}%</p>
+                      <p className="text-xs text-gray-500">{contactabilityMetrics.byTimeOfDay.morning.success}/{contactabilityMetrics.byTimeOfDay.morning.attempts} attempts</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-xl p-4">
+                      <p className="text-sm font-medium text-gray-600 mb-2">Afternoon (12PM-5PM)</p>
+                      <p className="text-2xl font-bold text-gray-900 mb-1">{contactabilityMetrics.byTimeOfDay.afternoon.rate.toFixed(1)}%</p>
+                      <p className="text-xs text-gray-500">{contactabilityMetrics.byTimeOfDay.afternoon.success}/{contactabilityMetrics.byTimeOfDay.afternoon.attempts} attempts</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-xl p-4">
+                      <p className="text-sm font-medium text-gray-600 mb-2">Evening (5PM-9PM)</p>
+                      <p className="text-2xl font-bold text-gray-900 mb-1">{contactabilityMetrics.byTimeOfDay.evening.rate.toFixed(1)}%</p>
+                      <p className="text-xs text-gray-500">{contactabilityMetrics.byTimeOfDay.evening.success}/{contactabilityMetrics.byTimeOfDay.evening.attempts} attempts</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-xl p-4">
+                      <p className="text-sm font-medium text-gray-600 mb-2">Night (9PM-6AM)</p>
+                      <p className="text-2xl font-bold text-gray-900 mb-1">{contactabilityMetrics.byTimeOfDay.night.rate.toFixed(1)}%</p>
+                      <p className="text-xs text-gray-500">{contactabilityMetrics.byTimeOfDay.night.success}/{contactabilityMetrics.byTimeOfDay.night.attempts} attempts</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trends */}
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-5">Recent Trends</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border border-gray-200 rounded-xl p-5">
+                      <p className="text-sm font-medium text-gray-600 mb-3">Last 7 Days</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Attempts</span>
+                          <span className="text-sm font-semibold">{contactabilityMetrics.trends.last7Days.attempts}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Successful</span>
+                          <span className="text-sm font-semibold text-green-600">{contactabilityMetrics.trends.last7Days.success}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Rate</span>
+                          <span className="text-sm font-semibold text-blue-600">
+                            {contactabilityMetrics.trends.last7Days.attempts > 0
+                              ? ((contactabilityMetrics.trends.last7Days.success / contactabilityMetrics.trends.last7Days.attempts) * 100).toFixed(1)
+                              : '0.0'}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border border-gray-200 rounded-xl p-5">
+                      <p className="text-sm font-medium text-gray-600 mb-3">Last 30 Days</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Attempts</span>
+                          <span className="text-sm font-semibold">{contactabilityMetrics.trends.last30Days.attempts}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Successful</span>
+                          <span className="text-sm font-semibold text-green-600">{contactabilityMetrics.trends.last30Days.success}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Rate</span>
+                          <span className="text-sm font-semibold text-blue-600">
+                            {contactabilityMetrics.trends.last30Days.attempts > 0
+                              ? ((contactabilityMetrics.trends.last30Days.success / contactabilityMetrics.trends.last30Days.attempts) * 100).toFixed(1)
+                              : '0.0'}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border border-gray-200 rounded-xl p-5">
+                      <p className="text-sm font-medium text-gray-600 mb-3">Last 90 Days</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Attempts</span>
+                          <span className="text-sm font-semibold">{contactabilityMetrics.trends.last90Days.attempts}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Successful</span>
+                          <span className="text-sm font-semibold text-green-600">{contactabilityMetrics.trends.last90Days.success}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Rate</span>
+                          <span className="text-sm font-semibold text-blue-600">
+                            {contactabilityMetrics.trends.last90Days.attempts > 0
+                              ? ((contactabilityMetrics.trends.last90Days.success / contactabilityMetrics.trends.last90Days.attempts) * 100).toFixed(1)
+                              : '0.0'}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Performing Agents */}
+                {contactabilityMetrics.topPerformingAgents.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
+                      <Users size={20} />
+                      Top Performing Agents
+                    </h3>
+                    <div className="space-y-3">
+                      {contactabilityMetrics.topPerformingAgents.map((agent, index) => (
+                        <div key={agent.agent_id} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                              index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                              index === 1 ? 'bg-gray-100 text-gray-700' :
+                              index === 2 ? 'bg-orange-100 text-orange-700' :
+                              'bg-blue-50 text-blue-600'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{agent.agent_name}</p>
+                              <p className="text-xs text-gray-500">{agent.attempts} attempts • {agent.successful} successful</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-teal-600">{agent.rate.toFixed(1)}%</p>
+                            <p className="text-xs text-gray-500">success rate</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Outcome Breakdown */}
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-5">Contact Outcomes</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {Object.entries(contactabilityMetrics.byOutcome)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([outcome, count]) => (
+                        <div key={outcome} className="border border-gray-200 rounded-lg p-3">
+                          <p className="text-xs text-gray-600 mb-1 capitalize">{outcome.replace(/_/g, ' ')}</p>
+                          <p className="text-xl font-bold text-gray-900">{count}</p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-16 text-center">
+                <Phone size={48} className="mx-auto mb-4 text-gray-300" />
+                <p className="text-gray-500 font-medium">No contactability data available</p>
+                <p className="text-sm text-gray-400 mt-2">Contact attempts will appear here once recorded</p>
+              </div>
+            )}
           </div>
         )}
       </div>
