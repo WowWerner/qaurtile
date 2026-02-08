@@ -210,13 +210,13 @@ export function ReportsDashboardPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-normal transition-all duration-200 whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'bg-teal-50 text-teal-700 shadow-sm'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <Icon size={16} />
+                  <Icon size={15} />
                   {tab.label}
                 </button>
               );
