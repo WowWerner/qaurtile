@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, Database, RefreshCw, Table2, ChevronRight, Search, ArrowUpDown, ChevronLeft, BarChart3, TrendingUp, DollarSign, Calendar, Phone, Mail, MessageSquare, Award, Clock, Users } from 'lucide-react';
 import { getContactabilityMetrics, type ContactabilityMetrics } from '../services/contactabilityService';
+import CollectionActivityReportPage from './CollectionActivityReportPage';
 
 const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/swordfish-proxy`;
 const AUTH_HEADERS = {
@@ -432,41 +433,7 @@ export function ReportsDashboardPage() {
         )}
 
         {/* Collection Activity Report */}
-        {activeTab === 'collection-activity' && (
-          <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
-                <BarChart3 size={24} className="text-teal-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Collection Activity Report</h2>
-                <p className="text-sm text-gray-500">Track collection activities and performance metrics</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50">
-                <p className="text-sm font-medium text-blue-600 mb-1">Total Activities</p>
-                <p className="text-3xl font-bold text-blue-900">2,847</p>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-5 border border-green-200/50">
-                <p className="text-sm font-medium text-green-600 mb-1">Successful Contacts</p>
-                <p className="text-3xl font-bold text-green-900">1,523</p>
-              </div>
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-5 border border-amber-200/50">
-                <p className="text-sm font-medium text-amber-600 mb-1">Pending Follow-ups</p>
-                <p className="text-3xl font-bold text-amber-900">892</p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-5 border border-purple-200/50">
-                <p className="text-sm font-medium text-purple-600 mb-1">Success Rate</p>
-                <p className="text-3xl font-bold text-purple-900">53.5%</p>
-              </div>
-            </div>
-            <div className="text-center py-12 text-gray-400">
-              <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="font-medium">Detailed collection activity charts coming soon</p>
-            </div>
-          </div>
-        )}
+        {activeTab === 'collection-activity' && <CollectionActivityReportPage />}
 
         {/* Propensity to Pay */}
         {activeTab === 'propensity' && (
