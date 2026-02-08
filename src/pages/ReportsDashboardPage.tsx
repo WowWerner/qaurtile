@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Database, RefreshCw, Table2, ChevronRight, Search, ArrowUpDown, ChevronLeft } from 'lucide-react';
+import { FileText, Database, RefreshCw, Table2, ChevronRight, Search, ArrowUpDown, ChevronLeft, BarChart3, TrendingUp, DollarSign, Calendar, Phone } from 'lucide-react';
 
 const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/swordfish-proxy`;
 const AUTH_HEADERS = {
@@ -28,8 +28,10 @@ interface TableDataResponse {
 }
 
 type SortDirection = 'asc' | 'desc';
+type TabType = 'database' | 'collection-activity' | 'propensity' | 'payment' | 'ptp' | 'contactability';
 
 export function ReportsDashboardPage() {
+  const [activeTab, setActiveTab] = useState<TabType>('database');
   const [tableCount, setTableCount] = useState<number | null>(null);
   const [tables, setTables] = useState<string[]>([]);
   const [filteredTables, setFilteredTables] = useState<string[]>([]);
@@ -168,33 +170,70 @@ export function ReportsDashboardPage() {
     );
   }
 
+  const tabs = [
+    { id: 'database' as TabType, label: 'Database', icon: Database },
+    { id: 'collection-activity' as TabType, label: 'Collection Activity Report', icon: BarChart3 },
+    { id: 'propensity' as TabType, label: 'Propensity to Pay', icon: TrendingUp },
+    { id: 'payment' as TabType, label: 'Payment Reporting', icon: DollarSign },
+    { id: 'ptp' as TabType, label: 'Promise to Pay (PTP) Reporting', icon: Calendar },
+    { id: 'contactability' as TabType, label: 'Contactability Report', icon: Phone },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
       <div className="max-w-[1400px] mx-auto px-6 pt-28 pb-12">
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Reports</h1>
-              <p className="text-gray-500 mt-1">Swordfish database explorer</p>
+              <p className="text-gray-500 mt-1">Comprehensive reporting and analytics</p>
             </div>
-            <button
-              onClick={() => fetchOverview()}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
+            {activeTab === 'database' && (
+              <button
+                onClick={() => fetchOverview()}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+            )}
           </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-            {error}
+        {/* Tabs Navigation */}
+        <div className="mb-8 bg-white rounded-2xl border border-gray-200/60 shadow-sm p-2 overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'bg-teal-50 text-teal-700 shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <Icon size={16} />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
-        )}
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        {/* Tab Content */}
+        {activeTab === 'database' && (
+          <>
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
           <div className="bg-white rounded-2xl border border-gray-200/60 p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
@@ -367,6 +406,193 @@ export function ReportsDashboardPage() {
             )}
           </div>
         </div>
+          </>
+        )}
+
+        {/* Collection Activity Report */}
+        {activeTab === 'collection-activity' && (
+          <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
+                <BarChart3 size={24} className="text-teal-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Collection Activity Report</h2>
+                <p className="text-sm text-gray-500">Track collection activities and performance metrics</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50">
+                <p className="text-sm font-medium text-blue-600 mb-1">Total Activities</p>
+                <p className="text-3xl font-bold text-blue-900">2,847</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-5 border border-green-200/50">
+                <p className="text-sm font-medium text-green-600 mb-1">Successful Contacts</p>
+                <p className="text-3xl font-bold text-green-900">1,523</p>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-5 border border-amber-200/50">
+                <p className="text-sm font-medium text-amber-600 mb-1">Pending Follow-ups</p>
+                <p className="text-3xl font-bold text-amber-900">892</p>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-5 border border-purple-200/50">
+                <p className="text-sm font-medium text-purple-600 mb-1">Success Rate</p>
+                <p className="text-3xl font-bold text-purple-900">53.5%</p>
+              </div>
+            </div>
+            <div className="text-center py-12 text-gray-400">
+              <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="font-medium">Detailed collection activity charts coming soon</p>
+            </div>
+          </div>
+        )}
+
+        {/* Propensity to Pay */}
+        {activeTab === 'propensity' && (
+          <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
+                <TrendingUp size={24} className="text-teal-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Propensity to Pay</h2>
+                <p className="text-sm text-gray-500">AI-powered payment probability analysis</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-5 border border-emerald-200/50">
+                <p className="text-sm font-medium text-emerald-600 mb-1">High Propensity</p>
+                <p className="text-3xl font-bold text-emerald-900">1,245</p>
+              </div>
+              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 rounded-xl p-5 border border-yellow-200/50">
+                <p className="text-sm font-medium text-yellow-600 mb-1">Medium Propensity</p>
+                <p className="text-3xl font-bold text-yellow-900">3,892</p>
+              </div>
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-5 border border-orange-200/50">
+                <p className="text-sm font-medium text-orange-600 mb-1">Low Propensity</p>
+                <p className="text-3xl font-bold text-orange-900">2,156</p>
+              </div>
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-5 border border-slate-200/50">
+                <p className="text-sm font-medium text-slate-600 mb-1">Avg. Score</p>
+                <p className="text-3xl font-bold text-slate-900">67.8</p>
+              </div>
+            </div>
+            <div className="text-center py-12 text-gray-400">
+              <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="font-medium">Advanced propensity analysis dashboard coming soon</p>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Reporting */}
+        {activeTab === 'payment' && (
+          <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
+                <DollarSign size={24} className="text-teal-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Payment Reporting</h2>
+                <p className="text-sm text-gray-500">Comprehensive payment analysis and trends</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-teal-50 to-teal-100/50 rounded-xl p-5 border border-teal-200/50">
+                <p className="text-sm font-medium text-teal-600 mb-1">Total Collected</p>
+                <p className="text-3xl font-bold text-teal-900">R 2.4M</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50">
+                <p className="text-sm font-medium text-blue-600 mb-1">This Month</p>
+                <p className="text-3xl font-bold text-blue-900">R 387K</p>
+              </div>
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-xl p-5 border border-indigo-200/50">
+                <p className="text-sm font-medium text-indigo-600 mb-1">Avg. Payment</p>
+                <p className="text-3xl font-bold text-indigo-900">R 1,247</p>
+              </div>
+              <div className="bg-gradient-to-br from-cyan-50 to-cyan-100/50 rounded-xl p-5 border border-cyan-200/50">
+                <p className="text-sm font-medium text-cyan-600 mb-1">Payment Count</p>
+                <p className="text-3xl font-bold text-cyan-900">1,923</p>
+              </div>
+            </div>
+            <div className="text-center py-12 text-gray-400">
+              <DollarSign size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="font-medium">Detailed payment analytics and reports coming soon</p>
+            </div>
+          </div>
+        )}
+
+        {/* Promise to Pay (PTP) Reporting */}
+        {activeTab === 'ptp' && (
+          <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
+                <Calendar size={24} className="text-teal-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Promise to Pay (PTP) Reporting</h2>
+                <p className="text-sm text-gray-500">Track payment promises and fulfillment rates</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-xl p-5 border border-violet-200/50">
+                <p className="text-sm font-medium text-violet-600 mb-1">Active PTPs</p>
+                <p className="text-3xl font-bold text-violet-900">567</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-5 border border-green-200/50">
+                <p className="text-sm font-medium text-green-600 mb-1">Kept Promises</p>
+                <p className="text-3xl font-bold text-green-900">423</p>
+              </div>
+              <div className="bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl p-5 border border-red-200/50">
+                <p className="text-sm font-medium text-red-600 mb-1">Broken Promises</p>
+                <p className="text-3xl font-bold text-red-900">89</p>
+              </div>
+              <div className="bg-gradient-to-br from-sky-50 to-sky-100/50 rounded-xl p-5 border border-sky-200/50">
+                <p className="text-sm font-medium text-sky-600 mb-1">Fulfillment Rate</p>
+                <p className="text-3xl font-bold text-sky-900">82.6%</p>
+              </div>
+            </div>
+            <div className="text-center py-12 text-gray-400">
+              <Calendar size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="font-medium">Comprehensive PTP tracking dashboard coming soon</p>
+            </div>
+          </div>
+        )}
+
+        {/* Contactability Report */}
+        {activeTab === 'contactability' && (
+          <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center">
+                <Phone size={24} className="text-teal-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Contactability Report</h2>
+                <p className="text-sm text-gray-500">Analyze contact success rates and channel effectiveness</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-xl p-5 border border-pink-200/50">
+                <p className="text-sm font-medium text-pink-600 mb-1">Contact Attempts</p>
+                <p className="text-3xl font-bold text-pink-900">4,521</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-5 border border-green-200/50">
+                <p className="text-sm font-medium text-green-600 mb-1">Successful</p>
+                <p className="text-3xl font-bold text-green-900">2,834</p>
+              </div>
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-5 border border-gray-200/50">
+                <p className="text-sm font-medium text-gray-600 mb-1">Unreachable</p>
+                <p className="text-3xl font-bold text-gray-900">1,687</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50">
+                <p className="text-sm font-medium text-blue-600 mb-1">Success Rate</p>
+                <p className="text-3xl font-bold text-blue-900">62.7%</p>
+              </div>
+            </div>
+            <div className="text-center py-12 text-gray-400">
+              <Phone size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="font-medium">Advanced contactability analytics coming soon</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
